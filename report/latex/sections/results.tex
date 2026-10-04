@@ -1,0 +1,79 @@
+% ---------------------------------------------------------------
+% 6. Results
+% Included from main.tex via \input{sections/results}
+% ---------------------------------------------------------------
+
+All results below are on the held-out test set (August 2018) unless stated
+otherwise.
+
+\subsection{Problem A: Late Delivery}
+
+\begin{table}[H]
+    \centering
+    \caption{Classification results on the test set.}
+    \label{tab:results-classification}
+    \begin{tabular}{|l|c|c|c|c|c|}
+        \hline
+        \textbf{Model} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{ROC-AUC} & \textbf{PR-AUC} \\
+        \hline
+        No-skill baseline & \tbd & \tbd & \tbd & 0.500 & \tbd \\
+        \hline
+        Logistic regression & \tbd & \tbd & \tbd & \tbd & \tbd \\
+        \hline
+        L1 logistic regression & \tbd & \tbd & \tbd & \tbd & \tbd \\
+        \hline
+        Decision tree & \tbd & \tbd & \tbd & \tbd & \tbd \\
+        \hline
+        \todo{tree model} & \tbd & \tbd & \tbd & \tbd & \tbd \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\todo{Interpret the results; state the decision threshold used.}
+
+\subsection{Problem B: Delivery Time}
+
+\begin{table}[H]
+    \centering
+    \caption{Regression results on the test set (days).}
+    \label{tab:results-regression}
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        \textbf{Model} & \textbf{MAE} & \textbf{RMSE} & \textbf{$R^2$} \\
+        \hline
+        Median baseline & \tbd & \tbd & \tbd \\
+        \hline
+        Linear regression & \tbd & \tbd & \tbd \\
+        \hline
+        Ridge & \tbd & \tbd & \tbd \\
+        \hline
+        Lasso & \tbd & \tbd & \tbd \\
+        \hline
+        Decision tree & \tbd & \tbd & \tbd \\
+        \hline
+        \todo{tree model} & \tbd & \tbd & \tbd \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\todo{Interpret the results; compare with the error of Olist's own estimated
+delivery date.}
+
+\subsection{Cross-Validation Results}
+
+\begin{table}[H]
+    \centering
+    \caption{Cross-validation results on the training period (mean $\pm$ standard deviation over 5 folds).}
+    \label{tab:results-cv}
+    \begin{tabular}{|l|c|c|}
+        \hline
+        \textbf{Model} & \textbf{Problem A: PR-AUC} & \textbf{Problem B: MAE} \\
+        \hline
+        \todo{model} & \tbd{} $\pm$ \tbd & \tbd{} $\pm$ \tbd \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Ensemble Results}
+
+\todo{Stacking or voting results, if used; otherwise remove this subsection.}

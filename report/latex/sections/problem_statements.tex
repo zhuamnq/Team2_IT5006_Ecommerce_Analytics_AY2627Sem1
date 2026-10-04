@@ -1,0 +1,45 @@
+% ---------------------------------------------------------------
+% 1. Problem Statements and Stakeholder Context
+% Included from main.tex via \input{sections/problem_statements}
+% ---------------------------------------------------------------
+
+Building on the candidate problems identified in Milestone 1, this phase
+addresses two delivery-related prediction problems on the Olist dataset. All
+orders in the dataset are domestic Brazilian deliveries; 63.8\% of order items
+are shipped across state borders. Both problems predict at the moment of
+purchase, so only information available at that time is used as input. The
+two formulations follow the delivery-prediction literature reviewed in
+Milestone 1: late-delivery classification and delivery-time regression
+\citep{steinberg2023late, salari2022delivery}.
+
+\subsection{Problem A: Late Delivery Prediction (Classification)}
+
+\textbf{Question.} Will an order be delivered after the estimated delivery date
+shown to the customer at purchase?
+
+\textbf{Target.} \texttt{is\_late} $= 1$ if the calendar date of
+\texttt{order\_\allowbreak delivered\_\allowbreak customer\_\allowbreak date} is later than
+\texttt{order\_\allowbreak estimated\_\allowbreak delivery\_\allowbreak date}, and $0$ otherwise. Dates rather than
+timestamps are compared because the estimated date is stored as midnight.
+6.8\% of delivered orders are late.
+
+\textbf{Stakeholder.} \todo{e.g.\ Olist logistics and customer-service teams,
+who could flag high-risk orders early. Milestone 1 showed late orders average a
+2.57 review score against 4.29 for on-time orders.}
+
+\textbf{Success criteria.} \todo{e.g.\ PR-AUC above the no-skill baseline of
+0.068, and recall of at least X\% at precision of at least Y\%.}
+
+\subsection{Problem B: Delivery Time Prediction (Regression)}
+
+\textbf{Question.} How many days will an order take to reach the customer?
+
+\textbf{Target.} \texttt{delivery\_days}, the time from
+\texttt{order\_\allowbreak purchase\_\allowbreak timestamp} to \texttt{order\_\allowbreak delivered\_\allowbreak customer\_\allowbreak date}
+in days.
+
+\textbf{Stakeholder.} \todo{e.g.\ Olist, to set more accurate delivery
+promises; sellers, to plan dispatch.}
+
+\textbf{Success criteria.} \todo{e.g.\ MAE below the naive median baseline and
+below the error of Olist's own estimated delivery date.}

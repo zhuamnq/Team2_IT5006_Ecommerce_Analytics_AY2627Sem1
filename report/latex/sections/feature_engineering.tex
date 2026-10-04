@@ -1,0 +1,54 @@
+% ---------------------------------------------------------------
+% 3. Feature Engineering
+% Included from main.tex via \input{sections/feature_engineering}
+% ---------------------------------------------------------------
+
+Features are grouped by source. All are available at the time of purchase;
+seller-history features use only orders placed before the current order.
+\todo{Update the counts once the final feature lists are fixed.}
+
+\begin{table}[H]
+    \centering
+    \caption{Engineered feature groups.}
+    \label{tab:features}
+    \begin{tabularx}{\textwidth}{|p{3.2cm}|X|c|}
+        \hline
+        \textbf{Group} & \textbf{Examples} & \textbf{Count} \\
+        \hline
+        Promise and timing & \texttt{promised\_delivery\_days}, promised days per km & \tbd \\
+        \hline
+        Geography & haversine distance, region pair, same state/city, capital city, remote state & \tbd \\
+        \hline
+        Product & billable weight, volume, density, longest side, category & \tbd \\
+        \hline
+        Order composition & item count, seller count, order value, freight value & \tbd \\
+        \hline
+        Payment & payment type, instalments, voucher use & \tbd \\
+        \hline
+        Seller history & past late rate, backlog in last 7 days, new-seller flag & \tbd \\
+        \hline
+        Calendar & month, weekday, hour, days to holiday, peak season & \tbd \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+\subsection{Distance and Geography}
+
+\todo{Haversine distance between zip-prefix centroids; why straight-line
+distance was preferred over road-routing APIs.}
+
+\subsection{Product and Order Features}
+
+\todo{Billable weight $= \max(\mathrm{actual\ weight}, \mathrm{volume}/6000)$ and
+other product features.}
+
+\subsection{Seller History Features}
+
+\todo{How seller statistics are built from the order--seller bridge, fitted on
+training data only, smoothed, and aggregated for multi-seller orders.}
+
+\subsection{Encoding and Scaling}
+
+\todo{One-hot encoding, scaling, $\log(1+x)$ transforms and imputation, all
+fitted inside scikit-learn pipelines; separate feature lists for linear and
+tree-based models.}

@@ -1,0 +1,28 @@
+% ---------------------------------------------------------------
+% 4. Models and Training Process
+% Included from main.tex via \input{sections/models}
+% ---------------------------------------------------------------
+
+Two model families are used for each problem, each starting from its simplest
+variant as a baseline. All preprocessing is part of the scikit-learn pipeline,
+and the random seed is fixed at 42.
+
+\begin{table}[H]
+    \centering
+    \caption{Model families and baselines.}
+    \label{tab:models}
+    \begin{tabularx}{\textwidth}{|p{2.6cm}|X|X|}
+        \hline
+        \textbf{Family} & \textbf{Problem A (classification)} & \textbf{Problem B (regression)} \\
+        \hline
+        Linear & Logistic regression (baseline), L1 logistic regression & Linear regression (baseline), Ridge, Lasso \\
+        \hline
+        Tree-based & Decision tree (baseline), random forest \todo{or boosting} & Decision tree (baseline), random forest \todo{or boosting} \\
+        \hline
+        Reference & Majority class / no-skill & Median of training \texttt{delivery\_days} \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+\todo{Describe class imbalance handling for Problem A (e.g.\ class weights or
+threshold tuning) and any target transform for Problem B.}

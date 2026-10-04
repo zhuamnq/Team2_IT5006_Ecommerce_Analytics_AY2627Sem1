@@ -1,0 +1,49 @@
+% ---------------------------------------------------------------
+% 2. Data Preprocessing and Cleaning
+% Included from main.tex via \input{sections/preprocessing}
+% ---------------------------------------------------------------
+
+\subsection{Cleaning Rules}
+
+The modelling datasets contain one row per delivered order (96,454 orders).
+\todo{List each cleaning rule and how many rows it removes, e.g.\ orders that
+were not delivered, missing delivery dates, invalid timestamps.}
+
+\begin{table}[H]
+    \centering
+    \caption{Cleaning steps and rows retained.}
+    \label{tab:cleaning}
+    \begin{tabularx}{\textwidth}{|X|r|r|}
+        \hline
+        \textbf{Step} & \textbf{Rows removed} & \textbf{Rows remaining} \\
+        \hline
+        Raw orders & -- & 99,441 \\
+        \hline
+        \todo{step} & \tbd & \tbd \\
+        \hline
+        Final modelling dataset & -- & 96,454 \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+\subsection{Missing Values and Outliers}
+
+Zip-code coordinates are taken as the median latitude and longitude of each zip
+prefix after removing geolocation points that fall outside Brazil.
+\todo{Report the remaining missing values (e.g.\ 477 order distances, 265
+customer coordinates) and how they are imputed inside the pipeline; describe
+outlier handling.}
+
+\subsection{Train/Test Split and Leakage Controls}
+
+The data is split by purchase date so that the model is always evaluated on
+orders placed after those it was trained on: training up to 30 June 2018
+(83,947 orders), validation in July 2018 (6,156) and test in August 2018
+(6,351). \todo{Note the July late rate of 3.4\% against 7.1\% in training and
+6.2\% in test, and how this affects tuning.}
+
+Columns known only after purchase are excluded as inputs: the carrier hand-off
+and customer delivery dates, \texttt{delivery\_days}, \texttt{delay\_days},
+\texttt{delivery\_status}, \texttt{review\_score}, payment approval time and
+the seller shipping limit date. Each target is also excluded as an input to
+the other problem.
