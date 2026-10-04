@@ -2,13 +2,13 @@ from pathlib import Path
 
 import pandas as pd
 
+from src.config import RAW, validate_data_path
 
-ROOT = Path(__file__).resolve().parents[1]
-RAW = ROOT / "IT5006_Project-Data" / "Olist_CSV"
 OUT = Path(__file__).with_name("data") / "olist_dashboard.csv.gz"
 
 
 def main():
+    validate_data_path()
     orders = pd.read_csv(RAW / "olist_orders_dataset.csv")
     customers = pd.read_csv(RAW / "olist_customers_dataset.csv")
     items = pd.read_csv(RAW / "olist_order_items_dataset.csv")
