@@ -20,3 +20,21 @@ python prepare_data.py
 ## Deploy
 
 In Streamlit Community Cloud, select this repository and set the entry point to `app.py`.
+
+## Milestone 2: Modelling
+
+```bash
+pip install -r requirements-modelling.txt
+jupyter notebook notebooks/
+```
+
+| Path | Contents |
+| --- | --- |
+| `notebooks/01_problem_scoping.ipynb` | Problem statements, stakeholders, targets, leakage rules |
+| `notebooks/02_preprocessing.ipynb` | Cleaning and train/test split |
+| `notebooks/03_feature_engineering.ipynb` | Feature construction |
+| `notebooks/04_classification_late_delivery.ipynb` | Late-delivery classification |
+| `notebooks/05_regression_freight.ipynb` | Freight-cost regression |
+| `notebooks/06_model_comparison.ipynb` | CV comparison, ensembles, feature importance, final selection |
+| `src/` | Reusable config, data, feature, model and evaluation code |
+| `report/` | Report outline, figures and tables |
