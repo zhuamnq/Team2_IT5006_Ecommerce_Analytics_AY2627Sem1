@@ -40,6 +40,10 @@ Submit as a PDF with the GitHub repository link on the cover page.
 - Recommendations for the stakeholder
 
 ## 10. Limitations and constraints
+- Validation month (July 2018) is unrepresentative: late rate 3.4% vs 7.1% in train; models are chosen on time-ordered CV instead
+- Test month (August 2018) is right-censored: only deliveries within 46 days could be observed
+- Delivery time drifts down over time (train 13.2 days, validation 9.0, test 7.7); Problem B predicts it relative to the promised date
+- 13.4% of test orders have a seller not seen in training; seller history falls back to the average
 
 ## References
 

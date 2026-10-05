@@ -96,13 +96,18 @@ def add_features(frame, purchase_times=None):
 #   Point-in-time, from purchase times only, so every split may use every
 #   earlier order: seller_past_orders, seller_backlog_7d, seller_is_new,
 #   seller_past_avg_freight.
-#   Outcome-based, from TRAINING orders only and only those already delivered
-#   at this order's purchase time (delivered = purchase + delivery_days):
-#   seller_past_late_rate, seller_past_delivery_days, route_past_late_rate,
-#   smoothed towards the training average by SMOOTHING pseudo-orders, so new
-#   or rarely seen sellers and routes get the training average.
+#   Outcome-based, from HISTORY_SPLITS orders only (training by default) and
+#   only those already delivered at this order's purchase time
+#   (delivered = purchase + delivery_days): seller_past_late_rate,
+#   seller_past_delivery_days, route_past_late_rate, smoothed towards the
+#   history average by SMOOTHING pseudo-orders, so new or rarely seen sellers
+#   and routes get the history average.
+#   For the final model, refitted on train + validation and scored on test,
+#   pass history_splits=("train", "validation") so July outcomes count as
+#   history, as they would in production.
 SMOOTHING = 10
 NEW_SELLER_DAYS = 30
+HISTORY_SPLITS = ("train",)
 
 
 def load_seller_bridge():
@@ -158,8 +163,11 @@ def past_outcome(keys, at, history, value, prior):
     return mean, count
 
 
-def add_seller_features(frame, bridge=None, outcomes=None):
-    """Join seller history features to an order-level frame (one row per order)."""
+def add_seller_features(frame, bridge=None, outcomes=None, history_splits=HISTORY_SPLITS):
+    """Join seller history features to an order-level frame (one row per order).
+
+    Outcome-based features use only orders whose split is in `history_splits`.
+    """
     bridge = load_seller_bridge() if bridge is None else bridge
     outcomes = load_outcomes() if outcomes is None else outcomes
     rows = bridge.merge(outcomes, on="order_id", how="left", validate="many_to_one").merge(
@@ -167,19 +175,21 @@ def add_seller_features(frame, bridge=None, outcomes=None):
     )
     rows = rows.join(seller_point_in_time(rows))
 
-    train = rows[rows["split"] == "train"].assign(
+    unknown = set(history_splits) - set(rows["split"])
+    if unknown:
+        raise ValueError(f"Unknown history splits: {sorted(unknown)}")
+    rows["route"] = rows["seller_state"] + ">" + rows["customer_state"]
+    past = rows[rows["split"].isin(history_splits)].assign(
         delivered_at=lambda d: d["order_purchase_timestamp"] + pd.to_timedelta(d["delivery_days"], unit="D")
     )
-    rows["route"] = rows["seller_state"] + ">" + rows["customer_state"]
-    train["route"] = train["seller_state"] + ">" + train["customer_state"]
     at = rows["order_purchase_timestamp"].to_numpy()
     for name, key, value in [
         ("seller_past_late_rate", "seller_id", "is_late"),
         ("seller_past_delivery_days", "seller_id", "delivery_days"),
         ("route_past_late_rate", "route", "is_late"),
     ]:
-        history = train[[key, "delivered_at", value]].rename(columns={key: "key"})
-        rows[name], count = past_outcome(rows[key], at, history, value, train[value].mean())
+        history = past[[key, "delivered_at", value]].rename(columns={key: "key"})
+        rows[name], count = past_outcome(rows[key], at, history, value, past[value].mean())
         if key == "seller_id":
             rows["seller_past_deliveries"] = count
 
@@ -205,11 +215,11 @@ TABLES = {
 }
 
 
-def load_feature_table(problem):
+def load_feature_table(problem, history_splits=HISTORY_SPLITS):
     """Cleaned order file for "classification" or "regression" with Part A and
-    Part B features added."""
+    Part B features added. See add_seller_features for `history_splits`."""
     frame = pd.read_csv(PROCESSED / TABLES[problem])
-    return add_seller_features(add_features(frame))
+    return add_seller_features(add_features(frame), history_splits=history_splits)
 
 
 # Fixed band edges, not fitted; each band is [edge, next edge).
@@ -258,8 +268,11 @@ def build_preprocessor(numeric, categorical, skewed=(), banded=(), scale=True, m
                 SimpleImputer(strategy="median"), band, OneHotEncoder(handle_unknown="ignore")
             ), [column])
         )
+    # Always dense: HistGradientBoosting rejects sparse input, which a mostly
+    # one-hot column set would otherwise produce.
     return ColumnTransformer(
-        [t for t in transformers if t[2]], remainder="drop", verbose_feature_names_out=False
+        [t for t in transformers if t[2]], remainder="drop", sparse_threshold=0,
+        verbose_feature_names_out=False,
     )
 
 
@@ -274,6 +287,8 @@ def build_preprocessor(numeric, categorical, skewed=(), banded=(), scale=True, m
 #   any_seller_same_state, any_seller_same_city (same_state, same_city);
 #   seller_count, seller_state_count (multi_seller_flag);
 #   estimated_min/max_distance_km (mean); volumetric_weight_kg (volume / 6000);
+#   billable_weight_kg (max of weight and volume / 6000; 0.95 correlated with
+#   total_volume_cm3 on train);
 #   density_g_cm3 (weight / volume, and has impossible values up to 66 g/cm3);
 #   payment_value (order_value + freight_value); mean/max_item_price,
 #   unique_product_count, product_category_count, max_item_weight_g,
@@ -299,7 +314,7 @@ FEATURES_LINEAR = {
     "skewed": [
         "promised_delivery_days", "estimated_mean_distance_km", "freight_value",
         "order_value", "item_count", "total_weight_g", "total_volume_cm3",
-        "billable_weight_kg", "customer_zip_density",
+        "customer_zip_density",
         "seller_past_orders", "seller_backlog_7d", "seller_past_avg_freight",
     ],
     "categorical": [
@@ -310,12 +325,15 @@ FEATURES_LINEAR = {
 }
 
 # Everything, untransformed: trees split on raw values and are unaffected by
-# scale, skew or redundant columns.
+# scale, skew or redundant columns. Except platform_orders_7d: it grows with
+# the platform, so validation and test values sit beyond the training range,
+# where a tree predicts as for the largest training values
+# (platform_load_ratio stays).
 FEATURES_TREE = {
     "numeric": [
         "promised_delivery_days", "promised_days_per_km", "purchase_month_of_year",
         "purchase_weekday", "purchase_hour", "days_to_holiday", "peak_season_flag",
-        "weekend_days_to_estimate", "platform_orders_7d", "platform_load_ratio",
+        "weekend_days_to_estimate", "platform_load_ratio",
         "customer_zip_lat", "customer_zip_lng", "mean_seller_zip_lat",
         "mean_seller_zip_lng", "customer_zip_density", "customer_is_capital",
         "remote_flag", "same_state", "any_seller_same_state", "same_city",
@@ -343,3 +361,20 @@ FEATURES_TREE = {
 def feature_columns(features):
     """Input columns a feature set reads, each once."""
     return list(dict.fromkeys(column for group in features.values() for column in group))
+
+
+def output_sources(preprocessor):
+    """Input column behind each output column of a fitted build_preprocessor,
+    e.g. "customer_state" for "customer_state_SP"."""
+    names = preprocessor.get_feature_names_out()
+    sources = []
+    for name, transformer, columns in preprocessor.transformers_:
+        if transformer == "drop":
+            continue
+        outputs = names[preprocessor.output_indices_[name]]
+        if len(columns) == 1 or len(outputs) == len(columns):
+            sources += list(columns) * (len(outputs) // len(columns))
+        else:
+            # One-hot columns are named <column>_<category>
+            sources += [max((c for c in columns if n.startswith(f"{c}_")), key=len) for n in outputs]
+    return sources

@@ -275,6 +275,8 @@ Person B's features need no input from Person A, so both can start immediately.
 3. **Problem B wording.** `notebooks/01_problem_scoping.ipynb`, `notebooks/05_regression_freight.ipynb` and `report/report_outline.md` still describe freight cost as Problem B.
 4. **`purchase_month`** must be converted before modelling (Section 6.2).
 5. **`seller_avg_handling_days`** would need the raw delivered-to-carrier date. It is optional; drop it unless there is time.
+6. **The test month is right-censored.** The data end at the last recorded delivery (2018-10-17), so an August order appears only if it arrived within 46 days, about the 99th percentile of `delivery_days`. The slowest test deliveries are missing. Report as a limitation; it cannot be corrected (`notebooks/02_preprocessing.ipynb`, section 7.2).
+7. **Seller history for the final model.** Outcome-based seller features use training orders only by default. When refitting on train + validation for the final test score, build features with `load_feature_table(problem, history_splits=("train", "validation"))` so July outcomes count as history.
 
 ---
 
@@ -546,3 +548,5 @@ Lasso 是带 L1 惩罚项的线性模型。与树模型相比，它不能处理�
 3. **问题 B 的描述。** `notebooks/01_problem_scoping.ipynb`、`notebooks/05_regression_freight.ipynb` 和 `report/report_outline.md` 仍把运费写作问题 B。
 4. **`purchase_month`** 建模前必须转换（第 6.2 节）。
 5. **`seller_avg_handling_days`** 需要原始数据中的交给承运商日期。属于可选项；时间不够就放弃。
+6. **测试集月份存在右删失。** 数据截止于最后一次记录的送达（2018-10-17），因此 8 月的订单只有在 46 天内送达才会出现在数据中，约为 `delivery_days` 的第 99 百分位。测试集中最慢的配送因此缺失。应作为局限性写入报告；无法修正（见 `notebooks/02_preprocessing.ipynb` 第 7.2 节）。
+7. **最终模型的卖家历史。** 基于结果的卖家特征默认只使用训练集订单。用训练集 + 验证集重新拟合最终模型并在测试集上评分时，应使用 `load_feature_table(problem, history_splits=("train", "validation"))` 构建特征，使 7 月的结果也计入历史。
