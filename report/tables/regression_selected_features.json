@@ -1,0 +1,89 @@
+{
+  "linear": {
+    "numeric": [
+      "purchase_month_sin",
+      "purchase_month_cos",
+      "peak_season_flag",
+      "platform_load_ratio",
+      "customer_is_capital",
+      "remote_flag",
+      "same_state",
+      "same_city",
+      "multi_seller_flag",
+      "payment_installments",
+      "longest_side_cm",
+      "geolocation_missing",
+      "payment_missing",
+      "seller_is_new",
+      "seller_past_late_rate",
+      "seller_past_delivery_days"
+    ],
+    "skewed": [
+      "promised_delivery_days",
+      "estimated_mean_distance_km",
+      "freight_value",
+      "order_value",
+      "item_count",
+      "total_weight_g",
+      "customer_zip_density",
+      "seller_past_orders",
+      "seller_backlog_7d",
+      "seller_past_avg_freight"
+    ],
+    "categorical": [
+      "product_category",
+      "region_pair",
+      "customer_state",
+      "payment_type",
+      "purchase_weekday"
+    ],
+    "banded": [
+      "days_to_holiday",
+      "estimated_mean_distance_km",
+      "purchase_hour"
+    ]
+  },
+  "tree": {
+    "numeric": [
+      "promised_delivery_days",
+      "promised_days_per_km",
+      "purchase_weekday",
+      "purchase_hour",
+      "customer_zip_lat",
+      "customer_zip_lng",
+      "mean_seller_zip_lat",
+      "mean_seller_zip_lng",
+      "customer_zip_density",
+      "customer_is_capital",
+      "same_state",
+      "any_seller_same_state",
+      "estimated_min_distance_km",
+      "order_value",
+      "freight_value",
+      "unique_product_count",
+      "seller_count",
+      "product_category_count",
+      "max_item_weight_g",
+      "longest_side_cm",
+      "max_sum_of_dims_cm",
+      "billable_weight_kg",
+      "density_g_cm3",
+      "payment_value",
+      "payment_installments",
+      "seller_past_orders",
+      "seller_past_deliveries",
+      "seller_backlog_7d",
+      "seller_past_late_rate",
+      "seller_past_delivery_days",
+      "route_past_late_rate"
+    ],
+    "categorical": [
+      "product_category",
+      "region_pair",
+      "customer_state",
+      "customer_region",
+      "primary_seller_state",
+      "payment_type"
+    ]
+  }
+}
