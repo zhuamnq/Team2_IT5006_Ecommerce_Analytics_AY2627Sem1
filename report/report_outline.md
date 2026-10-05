@@ -8,7 +8,7 @@ Submit as a PDF with the GitHub repository link on the cover page.
 
 ## 1. Problem statements and stakeholder context
 - Problem A: late delivery (classification): stakeholder, target, success criteria
-- Problem B: freight cost (regression): stakeholder, target, success criteria
+- Problem B: delivery time (regression): stakeholder, target, success criteria
 
 ## 2. Data preprocessing and cleaning
 - Cleaning rules, missing values, outliers

@@ -5,7 +5,8 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
 
-from src.config import BR_HOLIDAYS, PEAK_SEASONS, PROCESSED, RAW
+from src.config import BR_HOLIDAYS, PEAK_SEASONS, RAW
+from src.data import read_processed
 
 # Columns known only after delivery; never use as features.
 LEAKAGE_COLUMNS = [
@@ -111,19 +112,13 @@ HISTORY_SPLITS = ("train",)
 
 
 def load_seller_bridge():
-    return pd.read_csv(
-        PROCESSED / "order_seller_bridge.csv.gz", parse_dates=["order_purchase_timestamp"]
-    )
+    return read_processed("order_seller_bridge.csv.gz", parse_dates=["order_purchase_timestamp"])
 
 
 def load_outcomes():
     """is_late and delivery_days for every order, from the two cleaned files."""
-    late = pd.read_csv(
-        PROCESSED / "late_delivery_classification.csv.gz", usecols=["order_id", "is_late"]
-    )
-    days = pd.read_csv(
-        PROCESSED / "delivery_time_regression.csv.gz", usecols=["order_id", "delivery_days"]
-    )
+    late = read_processed("late_delivery_classification.csv.gz", usecols=["order_id", "is_late"])
+    days = read_processed("delivery_time_regression.csv.gz", usecols=["order_id", "delivery_days"])
     return late.merge(days, on="order_id", how="inner", validate="one_to_one")
 
 
@@ -144,7 +139,7 @@ def seller_point_in_time(bridge):
     return pd.concat(out)
 
 
-def past_outcome(keys, at, history, value, prior):
+def past_outcome(keys, at, history, value, prior, smoothing=SMOOTHING):
     """Smoothed mean of `value` over `history` rows with the same key delivered before `at`.
 
     Returns (smoothed mean, number of history rows used) for each query.
@@ -158,15 +153,21 @@ def past_outcome(keys, at, history, value, prior):
         g = groups[key]
         n = np.searchsorted(g["delivered_at"].to_numpy(), at[positions], side="left")
         total = np.concatenate([[0], np.cumsum(g[value].to_numpy())])[n]
-        mean[positions] = (total + SMOOTHING * prior) / (n + SMOOTHING)
+        # smoothing=0 (no smoothing) leaves keys with no history at the prior
+        with np.errstate(invalid="ignore", divide="ignore"):
+            smoothed = (total + smoothing * prior) / (n + smoothing)
+        mean[positions] = np.where(n + smoothing > 0, smoothed, prior)
         count[positions] = n
     return mean, count
 
 
-def add_seller_features(frame, bridge=None, outcomes=None, history_splits=HISTORY_SPLITS):
+def add_seller_features(
+    frame, bridge=None, outcomes=None, history_splits=HISTORY_SPLITS, smoothing=SMOOTHING
+):
     """Join seller history features to an order-level frame (one row per order).
 
-    Outcome-based features use only orders whose split is in `history_splits`.
+    Outcome-based features use only orders whose split is in `history_splits`,
+    smoothed towards their average by `smoothing` pseudo-orders.
     """
     bridge = load_seller_bridge() if bridge is None else bridge
     outcomes = load_outcomes() if outcomes is None else outcomes
@@ -189,7 +190,7 @@ def add_seller_features(frame, bridge=None, outcomes=None, history_splits=HISTOR
         ("route_past_late_rate", "route", "is_late"),
     ]:
         history = past[[key, "delivered_at", value]].rename(columns={key: "key"})
-        rows[name], count = past_outcome(rows[key], at, history, value, past[value].mean())
+        rows[name], count = past_outcome(rows[key], at, history, value, past[value].mean(), smoothing)
         if key == "seller_id":
             rows["seller_past_deliveries"] = count
 
@@ -215,11 +216,12 @@ TABLES = {
 }
 
 
-def load_feature_table(problem, history_splits=HISTORY_SPLITS):
+def load_feature_table(problem, history_splits=HISTORY_SPLITS, smoothing=SMOOTHING):
     """Cleaned order file for "classification" or "regression" with Part A and
-    Part B features added. See add_seller_features for `history_splits`."""
-    frame = pd.read_csv(PROCESSED / TABLES[problem])
-    return add_seller_features(add_features(frame), history_splits=history_splits)
+    Part B features added. See add_seller_features for `history_splits` and
+    `smoothing`."""
+    frame = read_processed(TABLES[problem])
+    return add_seller_features(add_features(frame), history_splits=history_splits, smoothing=smoothing)
 
 
 # Fixed band edges, not fitted; each band is [edge, next edge).

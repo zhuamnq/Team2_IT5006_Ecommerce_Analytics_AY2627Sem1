@@ -30,14 +30,21 @@ pip install -r requirements-modelling.txt
 jupyter notebook notebooks/
 ```
 
+`data/processed/` is not committed. Build it first by running `notebooks/02_preprocessing.ipynb`, then run the notebooks in order:
+
+```bash
+jupyter nbconvert --to notebook --execute --inplace notebooks/02_preprocessing.ipynb
+```
+
 | Path | Contents |
 | --- | --- |
 | `notebooks/01_problem_scoping.ipynb` | Problem statements, stakeholders, targets, leakage rules |
-| `notebooks/02_preprocessing.ipynb` | Cleaning and train/test split |
-| `notebooks/03_feature_engineering.ipynb` | Feature construction |
-| `notebooks/04_classification_late_delivery.ipynb` | Late-delivery classification |
-| `notebooks/05_regression_freight.ipynb` | Freight-cost regression |
+| `notebooks/02_preprocessing.ipynb` | Cleaning, time-based train/validation/test split, export to `data/processed/` |
+| `notebooks/03_feature_engineering.ipynb` | Builds both feature tables with `src/features.py` and checks them |
+| `notebooks/03c_feature_selection.ipynb` | Problem B feature selection (Lasso stability selection, permutation importance) |
+| `notebooks/04_classification_late_delivery.ipynb` | Problem A: late-delivery classification |
+| `notebooks/05_regression_delivery_time.ipynb` | Problem B: delivery-time regression |
 | `notebooks/06_model_comparison.ipynb` | CV comparison, ensembles, feature importance, final selection |
-| `src/` | Reusable config, data, feature, model and evaluation code |
-| `report/` | Report outline, figures and tables |
+| `src/` | Reusable config, data loading and splitting, features, models and evaluation code |
+| `report/` | Report outline, feature engineering plan, figures and tables |
 | `data/raw/` | Original Olist CSV files shared by all notebooks and scripts |
