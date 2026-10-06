@@ -40,8 +40,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_preprocessing.i
 | --- | --- |
 | `notebooks/01_problem_scoping.ipynb` | Problem statements, stakeholders, targets, leakage rules |
 | `notebooks/02_preprocessing.ipynb` | Cleaning, time-based train/validation/test split, export to `data/processed/` |
-| `notebooks/03_feature_engineering.ipynb` | Builds both feature tables with `src/features.py` and checks them |
-| `notebooks/03c_feature_selection.ipynb` | Problem B feature selection (Lasso stability selection, permutation importance) |
+| `notebooks/03_feature_engineering.ipynb` | Part 1: builds both feature tables with `src/features.py` and checks them. Part 2: Problem B feature selection (Lasso stability selection, permutation importance) |
 | `notebooks/04_classification_late_delivery.ipynb` | Problem A: late-delivery classification |
 | `notebooks/05_regression_delivery_time.ipynb` | Problem B: delivery-time regression |
 | `notebooks/06_model_comparison.ipynb` | CV comparison, ensembles, feature importance, final selection |
