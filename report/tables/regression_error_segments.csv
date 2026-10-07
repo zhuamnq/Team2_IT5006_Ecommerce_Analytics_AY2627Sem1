@@ -1,0 +1,169 @@
+segment,group,metric,value
+Late,late,Orders,393.0
+Late,on time,Orders,5958.0
+Late,late,Share (%),6.19
+Late,on time,Share (%),93.81
+Late,late,Mean actual days,13.18
+Late,on time,Mean actual days,7.37
+Late,late,MAE XGBoost (tuned),7.81
+Late,on time,MAE XGBoost (tuned),2.37
+Late,late,MAE Lasso,8.03
+Late,on time,MAE Lasso,2.31
+Late,late,MAE Promise Baseline,9.35
+Late,on time,MAE Promise Baseline,2.61
+Late,late,Bias XGBoost (tuned),-7.81
+Late,on time,Bias XGBoost (tuned),0.76
+Actual delivery,up to 7 days,Orders,3156.0
+Actual delivery,8-14 days,Orders,2691.0
+Actual delivery,15-21 days,Orders,426.0
+Actual delivery,22-30 days,Orders,67.0
+Actual delivery,over 30 days,Orders,11.0
+Actual delivery,up to 7 days,Share (%),49.69
+Actual delivery,8-14 days,Share (%),42.37
+Actual delivery,15-21 days,Share (%),6.71
+Actual delivery,22-30 days,Share (%),1.05
+Actual delivery,over 30 days,Share (%),0.17
+Actual delivery,up to 7 days,Mean actual days,4.6
+Actual delivery,8-14 days,Mean actual days,9.5
+Actual delivery,15-21 days,Mean actual days,16.51
+Actual delivery,22-30 days,Mean actual days,23.72
+Actual delivery,over 30 days,Mean actual days,37.93
+Actual delivery,up to 7 days,MAE XGBoost (tuned),1.91
+Actual delivery,8-14 days,MAE XGBoost (tuned),3.0
+Actual delivery,15-21 days,MAE XGBoost (tuned),4.87
+Actual delivery,22-30 days,MAE XGBoost (tuned),10.83
+Actual delivery,over 30 days,MAE XGBoost (tuned),27.19
+Actual delivery,up to 7 days,MAE Lasso,1.94
+Actual delivery,8-14 days,MAE Lasso,2.75
+Actual delivery,15-21 days,MAE Lasso,5.46
+Actual delivery,22-30 days,MAE Lasso,11.57
+Actual delivery,over 30 days,MAE Lasso,27.31
+Actual delivery,up to 7 days,MAE Promise Baseline,2.02
+Actual delivery,8-14 days,MAE Promise Baseline,3.23
+Actual delivery,15-21 days,MAE Promise Baseline,6.86
+Actual delivery,22-30 days,MAE Promise Baseline,13.71
+Actual delivery,over 30 days,MAE Promise Baseline,30.04
+Actual delivery,up to 7 days,Bias XGBoost (tuned),1.11
+Actual delivery,8-14 days,Bias XGBoost (tuned),0.19
+Actual delivery,15-21 days,Bias XGBoost (tuned),-3.65
+Actual delivery,22-30 days,Bias XGBoost (tuned),-10.78
+Actual delivery,over 30 days,Bias XGBoost (tuned),-27.19
+Seller history,known seller,Orders,5893.0
+Seller history,new seller,Orders,458.0
+Seller history,known seller,Share (%),92.79
+Seller history,new seller,Share (%),7.21
+Seller history,known seller,Mean actual days,7.79
+Seller history,new seller,Mean actual days,6.95
+Seller history,known seller,MAE XGBoost (tuned),2.73
+Seller history,new seller,MAE XGBoost (tuned),2.49
+Seller history,known seller,MAE Lasso,2.69
+Seller history,new seller,MAE Lasso,2.31
+Seller history,known seller,MAE Promise Baseline,3.05
+Seller history,new seller,MAE Promise Baseline,2.74
+Seller history,known seller,Bias XGBoost (tuned),0.19
+Seller history,new seller,Bias XGBoost (tuned),0.68
+Remote state,not remote,Orders,6291.0
+Remote state,remote,Orders,60.0
+Remote state,not remote,Share (%),99.06
+Remote state,remote,Share (%),0.94
+Remote state,not remote,Mean actual days,7.67
+Remote state,remote,Mean actual days,14.19
+Remote state,not remote,MAE XGBoost (tuned),2.69
+Remote state,remote,MAE XGBoost (tuned),4.26
+Remote state,not remote,MAE Lasso,2.65
+Remote state,remote,MAE Lasso,3.98
+Remote state,not remote,MAE Promise Baseline,3.02
+Remote state,remote,MAE Promise Baseline,4.03
+Remote state,not remote,Bias XGBoost (tuned),0.2
+Remote state,remote,Bias XGBoost (tuned),2.84
+Same state,interstate,Orders,3526.0
+Same state,same state,Orders,2825.0
+Same state,interstate,Share (%),55.52
+Same state,same state,Share (%),44.48
+Same state,interstate,Mean actual days,9.34
+Same state,same state,Mean actual days,5.72
+Same state,interstate,MAE XGBoost (tuned),3.19
+Same state,same state,MAE XGBoost (tuned),2.11
+Same state,interstate,MAE Lasso,3.06
+Same state,same state,MAE Lasso,2.17
+Same state,interstate,MAE Promise Baseline,3.39
+Same state,same state,MAE Promise Baseline,2.58
+Same state,interstate,Bias XGBoost (tuned),1.14
+Same state,same state,Bias XGBoost (tuned),-0.91
+Distance,under 100 km,Orders,1600.0
+Distance,100-500 km,Orders,2456.0
+Distance,"500-1,500 km",Orders,1850.0
+Distance,"over 1,500 km",Orders,417.0
+Distance,under 100 km,Share (%),25.19
+Distance,100-500 km,Share (%),38.67
+Distance,"500-1,500 km",Share (%),29.13
+Distance,"over 1,500 km",Share (%),6.57
+Distance,under 100 km,Mean actual days,5.08
+Distance,100-500 km,Mean actual days,7.25
+Distance,"500-1,500 km",Mean actual days,9.58
+Distance,"over 1,500 km",Mean actual days,12.51
+Distance,under 100 km,MAE XGBoost (tuned),2.05
+Distance,100-500 km,MAE XGBoost (tuned),2.43
+Distance,"500-1,500 km",MAE XGBoost (tuned),3.16
+Distance,"over 1,500 km",MAE XGBoost (tuned),4.88
+Distance,under 100 km,MAE Lasso,2.22
+Distance,100-500 km,MAE Lasso,2.41
+Distance,"500-1,500 km",MAE Lasso,2.97
+Distance,"over 1,500 km",MAE Lasso,4.55
+Distance,under 100 km,MAE Promise Baseline,2.52
+Distance,100-500 km,MAE Promise Baseline,2.85
+Distance,"500-1,500 km",MAE Promise Baseline,3.49
+Distance,"over 1,500 km",MAE Promise Baseline,3.99
+Distance,under 100 km,Bias XGBoost (tuned),-1.18
+Distance,100-500 km,Bias XGBoost (tuned),0.05
+Distance,"500-1,500 km",Bias XGBoost (tuned),0.96
+Distance,"over 1,500 km",Bias XGBoost (tuned),3.48
+customer_region,CO,Orders,334.0
+customer_region,N,Orders,73.0
+customer_region,NE,Orders,433.0
+customer_region,S,Orders,821.0
+customer_region,SE,Orders,4690.0
+customer_region,CO,Share (%),5.26
+customer_region,N,Share (%),1.15
+customer_region,NE,Share (%),6.82
+customer_region,S,Share (%),12.93
+customer_region,SE,Share (%),73.85
+customer_region,CO,Mean actual days,10.47
+customer_region,N,Mean actual days,13.84
+customer_region,NE,Mean actual days,12.27
+customer_region,S,Mean actual days,8.98
+customer_region,SE,Mean actual days,6.81
+customer_region,CO,MAE XGBoost (tuned),3.11
+customer_region,N,MAE XGBoost (tuned),4.23
+customer_region,NE,MAE XGBoost (tuned),5.09
+customer_region,S,MAE XGBoost (tuned),2.69
+customer_region,SE,MAE XGBoost (tuned),2.44
+customer_region,CO,MAE Lasso,3.14
+customer_region,N,MAE Lasso,3.82
+customer_region,NE,MAE Lasso,4.38
+customer_region,S,MAE Lasso,2.65
+customer_region,SE,MAE Lasso,2.46
+customer_region,CO,MAE Promise Baseline,3.66
+customer_region,N,MAE Promise Baseline,4.12
+customer_region,NE,MAE Promise Baseline,4.03
+customer_region,S,MAE Promise Baseline,3.27
+customer_region,SE,MAE Promise Baseline,2.83
+customer_region,CO,Bias XGBoost (tuned),-0.18
+customer_region,N,Bias XGBoost (tuned),2.43
+customer_region,NE,Bias XGBoost (tuned),3.62
+customer_region,S,Bias XGBoost (tuned),0.18
+customer_region,SE,Bias XGBoost (tuned),-0.08
+Sellers,multi-seller,Orders,112.0
+Sellers,single seller,Orders,6239.0
+Sellers,multi-seller,Share (%),1.76
+Sellers,single seller,Share (%),98.24
+Sellers,multi-seller,Mean actual days,6.91
+Sellers,single seller,Mean actual days,7.75
+Sellers,multi-seller,MAE XGBoost (tuned),2.45
+Sellers,single seller,MAE XGBoost (tuned),2.71
+Sellers,multi-seller,MAE Lasso,2.23
+Sellers,single seller,MAE Lasso,2.67
+Sellers,multi-seller,MAE Promise Baseline,4.32
+Sellers,single seller,MAE Promise Baseline,3.01
+Sellers,multi-seller,Bias XGBoost (tuned),0.72
+Sellers,single seller,Bias XGBoost (tuned),0.22
