@@ -1,0 +1,26 @@
+{
+  "final_model": "XGBoost (tuned)",
+  "best_params": {
+    "Lasso": {
+      "model__alpha": 0.0016102620275609393
+    },
+    "Decision Tree": {
+      "model__max_depth": 8,
+      "model__min_samples_leaf": 100
+    },
+    "Random Forest": {
+      "model__n_estimators": 200,
+      "model__min_samples_leaf": 5,
+      "model__max_features": 0.33,
+      "model__max_depth": 30
+    },
+    "XGBoost": {
+      "model__subsample": 1.0,
+      "model__n_estimators": 800,
+      "model__min_child_weight": 20,
+      "model__max_depth": 8,
+      "model__learning_rate": 0.03,
+      "model__colsample_bytree": 0.7
+    }
+  }
+}

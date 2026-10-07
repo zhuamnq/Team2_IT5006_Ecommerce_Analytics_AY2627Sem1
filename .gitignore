@@ -5,3 +5,6 @@ __pycache__/
 .ipynb_checkpoints/
 .streamlit/
 data/processed/
+
+# Fitted models are rebuilt by the notebooks
+models/*.joblib
