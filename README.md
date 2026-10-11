@@ -48,7 +48,6 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_preprocessing.i
 | `notebooks/02_preprocessing.ipynb` | Problem B: cleaning, time-based train/validation/test split, export to `data/processed/` |
 | `notebooks/03_feature_engineering.ipynb` | Problem B: Part 1 builds the feature tables with `src/features.py` and checks them; Part 2 selects features (Lasso stability selection, permutation importance) |
 | `notebooks/05_regression_delivery_time.ipynb` | Problem B: baseline and Linear Regression, Lasso, Decision Tree, Random Forest and XGBoost under 5-fold time-series CV; tuning; final test evaluation; error analysis; feature importance |
-| `notebooks/06_model_comparison.ipynb` | Unused template. Model comparison, feature importance and final selection for each problem are in notebooks 04 and 05 |
 | `src/` | Reusable config, data loading and splitting, features, models and evaluation code |
 | `report/` | Report outline, feature engineering plan, figures and tables |
 | `data/raw/` | Original Olist CSV files shared by all notebooks and scripts |
