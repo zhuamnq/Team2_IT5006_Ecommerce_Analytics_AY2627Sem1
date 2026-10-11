@@ -1,6 +1,6 @@
 # Olist E-commerce Explorer
 
-Interactive exploratory dashboard for IT5006 Milestone 1, built with Streamlit.
+Interactive exploratory dashboard for IT5006 Milestone 1, built with Streamlit. The repository also contains the Milestone 2 modelling notebooks for both prediction problems; see [Milestone 2: Modelling](#milestone-2-modelling).
 
 **Live app:** https://team2-it5006-dashboard.streamlit.app/
 
@@ -30,6 +30,8 @@ pip install -r requirements-modelling.txt
 jupyter notebook notebooks/
 ```
 
+The notebooks need scikit-learn 1.6.1 or later. The saved outputs were produced with Python 3.9 (Problem A notebooks) and Python 3.11 (Problem B notebooks).
+
 `data/processed/` is not committed. Each problem has its own notebook sequence; run each in order:
 
 - **Problem A (promise-band classification):** `02_preprocessing_problemA` → `03_feature_engineering_problemA` → `04_classification_promise_band_modeling`
@@ -48,6 +50,6 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/02_preprocessing.i
 | `notebooks/02_preprocessing.ipynb` | Problem B: cleaning, time-based train/validation/test split, export to `data/processed/` |
 | `notebooks/03_feature_engineering.ipynb` | Problem B: Part 1 builds the feature tables with `src/features.py` and checks them; Part 2 selects features (Lasso stability selection, permutation importance) |
 | `notebooks/05_regression_delivery_time.ipynb` | Problem B: baseline and Linear Regression, Lasso, Decision Tree, Random Forest and XGBoost under 5-fold time-series CV; tuning; final test evaluation; error analysis; feature importance |
-| `src/` | Reusable config, data loading and splitting, features, models and evaluation code |
-| `report/` | Report outline, feature engineering plan, figures and tables |
+| `src/` | Reusable config, data loading and splitting, features and evaluation code |
+| `report/` | Report outline, feature engineering plan, and the regression result tables exported by notebook 05 (`report/tables/`) |
 | `data/raw/` | Original Olist CSV files shared by all notebooks and scripts |

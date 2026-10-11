@@ -7,7 +7,7 @@ Submit as a PDF with the GitHub repository link on the cover page.
 - Team, members, GitHub link
 
 ## 1. Problem statements and stakeholder context
-- Problem A: late delivery (classification): stakeholder, target, success criteria
+- Problem A: promised delivery band (three-class classification): stakeholder, target, success criteria
 - Problem B: delivery time (regression): stakeholder, target, success criteria
 
 ## 2. Data preprocessing and cleaning
