@@ -1,5 +1,12 @@
 {
-  "final_model": "XGBoost (tuned)",
+  "final_model": "Linear Regression",
+  "family_picks": {
+    "linear": "Linear Regression",
+    "tree": "XGBoost (tuned)"
+  },
+  "tree_folds_won": 5,
+  "gap_mean_days": 0.16321133120608122,
+  "gap_lower_bound_days": -0.022294980892301502,
   "best_params": {
     "Lasso": {
       "model__alpha": 0.0016102620275609393
