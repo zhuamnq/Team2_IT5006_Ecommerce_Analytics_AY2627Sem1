@@ -1,33 +1,47 @@
 {
-  "final_model": "Linear Regression",
+  "final_model": "XGBoost (tuned)",
+  "temporal_protocol": {
+    "selection_and_validation_fit_cutoff": "2018-07-01 00:00:00",
+    "test_fit_cutoff": "2018-08-01 00:00:00",
+    "history": "training: before purchase; evaluation: frozen at fit cutoff",
+    "prior": "available order-seller weighted outcomes; no history -> NaN -> fold imputation",
+    "cv_interpretation": "development selection scores, not independent nested CV"
+  },
+  "environment": {
+    "python": "3.12.7",
+    "sklearn": "1.6.1",
+    "numpy": "1.26.4",
+    "pandas": "2.2.2",
+    "xgboost": "3.2.0"
+  },
   "family_picks": {
-    "linear": "Linear Regression",
+    "linear": "Lasso",
     "tree": "XGBoost (tuned)"
   },
-  "tree_folds_won": 5,
-  "gap_mean_days": 0.16321133120608122,
-  "gap_lower_bound_days": -0.022294980892301502,
+  "tree_folds_won": 4,
+  "gap_mean_days": 0.24664749950425743,
+  "gap_lower_bound_days": 0.016982270654897103,
   "best_params": {
     "Lasso": {
-      "model__alpha": 0.0016102620275609393
+      "model__alpha": 0.002395026619987486
     },
     "Decision Tree": {
-      "model__max_depth": 8,
-      "model__min_samples_leaf": 100
+      "model__max_depth": 20,
+      "model__min_samples_leaf": 200
     },
     "Random Forest": {
       "model__n_estimators": 200,
-      "model__min_samples_leaf": 5,
-      "model__max_features": 0.33,
-      "model__max_depth": 30
+      "model__min_samples_leaf": 1,
+      "model__max_features": 0.2,
+      "model__max_depth": null
     },
     "XGBoost": {
-      "model__subsample": 1.0,
-      "model__n_estimators": 800,
-      "model__min_child_weight": 20,
-      "model__max_depth": 8,
-      "model__learning_rate": 0.03,
-      "model__colsample_bytree": 0.7
+      "model__subsample": 0.8,
+      "model__n_estimators": 400,
+      "model__min_child_weight": 10,
+      "model__max_depth": 6,
+      "model__learning_rate": 0.05,
+      "model__colsample_bytree": 0.5
     }
   }
 }
