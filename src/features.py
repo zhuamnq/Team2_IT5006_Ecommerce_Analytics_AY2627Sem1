@@ -6,7 +6,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
 
 from src.config import BR_HOLIDAYS, PEAK_SEASONS, RAW
-from src.data import read_processed
+from src.data import read_processed, DELIVERY_TIME, VALIDATION_CUTOFF, temporal_folds
 
 # Columns known only after delivery; never use as features.
 LEAKAGE_COLUMNS = [
@@ -97,15 +97,11 @@ def add_features(frame, purchase_times=None):
 #   Point-in-time, from purchase times only, so every split may use every
 #   earlier order: seller_past_orders, seller_backlog_7d, seller_is_new,
 #   seller_past_avg_freight.
-#   Outcome-based, from HISTORY_SPLITS orders only (training by default) and
-#   only those already delivered at this order's purchase time
-#   (delivered = purchase + delivery_days): seller_past_late_rate,
-#   seller_past_delivery_days, route_past_late_rate, smoothed towards the
-#   history average by SMOOTHING pseudo-orders, so new or rarely seen sellers
-#   and routes get the history average.
-#   For the final model, refitted on train + validation and scored on test,
-#   pass history_splits=("train", "validation") so July outcomes count as
-#   history, as they would in production.
+#   Outcomes AND the order-seller-weighted prior use deliveries strictly before
+#   min(query purchase, history_cutoff). Evaluation history is frozen at fit.
+#   No global history: return NaN, imputed only by the fold's fitted preprocessor.
+#   Purchase-only histories retain the original final-delivered cohort definition.
+#   Refit: pass history_splits=("train", "validation"), history_cutoff=TEST_CUTOFF.
 SMOOTHING = 10
 NEW_SELLER_DAYS = 30
 HISTORY_SPLITS = ("train",)
@@ -116,10 +112,18 @@ def load_seller_bridge():
 
 
 def load_outcomes():
-    """is_late and delivery_days for every order, from the two cleaned files."""
+    """Full historical cohort and exact raw delivery time (audit metadata only)."""
     late = read_processed("late_delivery_classification.csv.gz", usecols=["order_id", "is_late"])
-    days = read_processed("delivery_time_regression.csv.gz", usecols=["order_id", "delivery_days"])
-    return late.merge(days, on="order_id", how="inner", validate="one_to_one")
+    days = read_processed("delivery_time_regression.csv.gz", usecols=["order_id", "delivery_days", "customer_state"])
+    times = pd.read_csv(RAW / "olist_orders_dataset.csv",
+                        usecols=["order_id", "order_purchase_timestamp", DELIVERY_TIME],
+                        parse_dates=["order_purchase_timestamp", DELIVERY_TIME])
+    out = late.merge(days, on="order_id", validate="one_to_one").merge(times, on="order_id", validate="one_to_one")
+    assert len(out) == len(days) == len(late)
+    actual = (out[DELIVERY_TIME] - out["order_purchase_timestamp"]).dt.total_seconds() / 86400
+    assert out[DELIVERY_TIME].notna().all() and (actual > 0).all()
+    assert np.allclose(actual, out["delivery_days"], rtol=0, atol=1e-9)
+    return out.drop(columns="order_purchase_timestamp")
 
 
 def seller_point_in_time(bridge):
@@ -139,12 +143,20 @@ def seller_point_in_time(bridge):
     return pd.concat(out)
 
 
-def past_outcome(keys, at, history, value, prior, smoothing=SMOOTHING):
-    """Smoothed mean of `value` over `history` rows with the same key delivered before `at`.
+def past_outcome(keys, at, history, value, smoothing=SMOOTHING):
+    """Key mean and global prior both use only deliveries strictly before each at.
 
-    Returns (smoothed mean, number of history rows used) for each query.
+    History has one row per order-seller: preserve that prior weighting.
+    With no global history the prior is NaN; smoothing=0 never reads future data.
     """
-    mean = np.full(len(keys), prior, dtype=float)
+    if smoothing < 0:
+        raise ValueError("smoothing must be non-negative")
+    history = history.dropna(subset=["delivered_at", value])
+    global_history = history.sort_values("delivered_at")
+    n_global = np.searchsorted(global_history["delivered_at"].to_numpy(), at, side="left")
+    sums = np.r_[0., np.cumsum(global_history[value].to_numpy())]
+    prior = np.divide(sums[n_global], n_global, out=np.full(len(at), np.nan), where=n_global > 0)
+    mean = prior.copy()
     count = np.zeros(len(keys), dtype=int)
     groups = {key: g.sort_values("delivered_at") for key, g in history.groupby("key")}
     for key, positions in pd.Series(np.arange(len(keys))).groupby(keys.to_numpy()).groups.items():
@@ -153,44 +165,53 @@ def past_outcome(keys, at, history, value, prior, smoothing=SMOOTHING):
         g = groups[key]
         n = np.searchsorted(g["delivered_at"].to_numpy(), at[positions], side="left")
         total = np.concatenate([[0], np.cumsum(g[value].to_numpy())])[n]
-        # smoothing=0 (no smoothing) leaves keys with no history at the prior
         with np.errstate(invalid="ignore", divide="ignore"):
-            smoothed = (total + smoothing * prior) / (n + smoothing)
-        mean[positions] = np.where(n + smoothing > 0, smoothed, prior)
+            if smoothing == 0:
+                smoothed = np.where(n > 0, total / n, prior[positions])
+            else:
+                smoothed = (total + smoothing * prior[positions]) / (n + smoothing)
+        mean[positions] = smoothed
         count[positions] = n
     return mean, count
 
 
 def add_seller_features(
-    frame, bridge=None, outcomes=None, history_splits=HISTORY_SPLITS, smoothing=SMOOTHING
+    frame, bridge=None, outcomes=None, history_splits=HISTORY_SPLITS, smoothing=SMOOTHING,
+    history_cutoff=VALIDATION_CUTOFF,
 ):
     """Join seller history features to an order-level frame (one row per order).
 
-    Outcome-based features use only orders whose split is in `history_splits`,
-    smoothed towards their average by `smoothing` pseudo-orders.
+    Historical source rows are independent of query membership. Their exact delivery
+    times and prior obey the same per-query/frozen evaluation cutoff.
     """
     bridge = load_seller_bridge() if bridge is None else bridge
     outcomes = load_outcomes() if outcomes is None else outcomes
-    rows = bridge.merge(outcomes, on="order_id", how="left", validate="many_to_one").merge(
-        frame[["order_id", "customer_state"]], on="order_id", how="inner", validate="many_to_one"
-    )
+    rows = bridge.merge(outcomes, on="order_id", how="left", validate="many_to_one")
+    rows["order_purchase_timestamp"] = pd.to_datetime(rows["order_purchase_timestamp"])
+    rows[DELIVERY_TIME] = pd.to_datetime(rows[DELIVERY_TIME])
+    assert rows["customer_state"].notna().all()
+    assert rows[DELIVERY_TIME].notna().all()
+    assert rows[DELIVERY_TIME].gt(rows["order_purchase_timestamp"]).all()
     rows = rows.join(seller_point_in_time(rows))
 
     unknown = set(history_splits) - set(rows["split"])
     if unknown:
         raise ValueError(f"Unknown history splits: {sorted(unknown)}")
     rows["route"] = rows["seller_state"] + ">" + rows["customer_state"]
-    past = rows[rows["split"].isin(history_splits)].assign(
-        delivered_at=lambda d: d["order_purchase_timestamp"] + pd.to_timedelta(d["delivery_days"], unit="D")
-    )
-    at = rows["order_purchase_timestamp"].to_numpy()
+    cutoff = pd.Timestamp(history_cutoff)
+    past = rows.loc[rows["split"].isin(history_splits)
+                    & rows["order_purchase_timestamp"].lt(cutoff)
+                    & rows[DELIVERY_TIME].lt(cutoff)].rename(columns={DELIVERY_TIME: "delivered_at"})
+    # Only queries are subset: keep all allowed source events above.
+    rows = rows.loc[rows["order_id"].isin(frame["order_id"])].copy()
+    at = np.minimum(rows["order_purchase_timestamp"].to_numpy(dtype="datetime64[ns]"), cutoff.to_datetime64())
     for name, key, value in [
         ("seller_past_late_rate", "seller_id", "is_late"),
         ("seller_past_delivery_days", "seller_id", "delivery_days"),
         ("route_past_late_rate", "route", "is_late"),
     ]:
         history = past[[key, "delivered_at", value]].rename(columns={key: "key"})
-        rows[name], count = past_outcome(rows[key], at, history, value, past[value].mean(), smoothing)
+        rows[name], count = past_outcome(rows[key], at, history, value, smoothing=smoothing)
         if key == "seller_id":
             rows["seller_past_deliveries"] = count
 
@@ -205,7 +226,7 @@ def add_seller_features(
         seller_is_new=("seller_is_new", "max"),
         seller_past_avg_freight=("seller_past_avg_freight", "mean"),
     )
-    out = frame.merge(per_order, on="order_id", how="left", validate="one_to_one")
+    out = frame.drop(columns=per_order.columns, errors="ignore").merge(per_order, on="order_id", how="left", validate="one_to_one")
     assert len(out) == len(frame)
     return out
 
@@ -216,12 +237,35 @@ TABLES = {
 }
 
 
-def load_feature_table(problem, history_splits=HISTORY_SPLITS, smoothing=SMOOTHING):
+def load_feature_table(problem, history_splits=HISTORY_SPLITS, smoothing=SMOOTHING,
+                       history_cutoff=VALIDATION_CUTOFF):
     """Cleaned order file for "classification" or "regression" with Part A and
     Part B features added. See add_seller_features for `history_splits` and
     `smoothing`."""
-    frame = read_processed(TABLES[problem])
-    return add_seller_features(add_features(frame), history_splits=history_splits, smoothing=smoothing)
+    outcomes = load_outcomes()
+    frame = read_processed(TABLES[problem], parse_dates=["order_purchase_timestamp"])
+    frame = frame.merge(outcomes[["order_id", DELIVERY_TIME]], on="order_id", validate="one_to_one")
+    return add_seller_features(add_features(frame), outcomes=outcomes, history_splits=history_splits,
+                               smoothing=smoothing, history_cutoff=history_cutoff)
+
+
+def regression_cv_data(frame, n_splits=5, smoothing=SMOOTHING):
+    """Build once per fold, shared by feature selection, all models and searches."""
+    cohort = frame.loc[frame["split"].eq("train")].sort_values(
+        ["order_purchase_timestamp", "order_id"]).reset_index(drop=True)
+    folds, audit = temporal_folds(cohort, n_splits)
+    bridge, outcomes = load_seller_bridge(), load_outcomes()
+    data = []
+    for (fit, ev), cutoff in zip(folds, audit["cutoff"]):
+        query = cohort.iloc[np.r_[fit, ev]].copy()
+        safe = add_seller_features(query, bridge=bridge, outcomes=outcomes,
+                                   history_cutoff=cutoff, smoothing=smoothing).set_index("order_id")
+        train = safe.loc[cohort.iloc[fit].order_id].reset_index()
+        evaluation = safe.loc[cohort.iloc[ev].order_id].reset_index()
+        assert train[DELIVERY_TIME].lt(cutoff).all()
+        assert evaluation[DELIVERY_TIME].lt(VALIDATION_CUTOFF).all()
+        data.append((train, evaluation))
+    return data, audit
 
 
 # Fixed band edges, not fitted; each band is [edge, next edge).
@@ -250,7 +294,7 @@ def build_preprocessor(numeric, categorical, skewed=(), banded=(), scale=True, m
     payment_missing already flag every row with a gap.
     """
     def numeric_steps(*steps):
-        steps = [*steps, SimpleImputer(strategy="median")]
+        steps = [*steps, SimpleImputer(strategy="median", keep_empty_features=True)]
         if scale:
             steps.append(StandardScaler())
         return make_pipeline(*steps)
