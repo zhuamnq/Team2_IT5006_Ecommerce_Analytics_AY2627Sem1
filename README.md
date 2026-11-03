@@ -1,6 +1,6 @@
 # Olist E-commerce Explorer
 
-Interactive exploratory dashboard for IT5006 Milestone 1, built with Streamlit. The repository also contains the Milestone 2 modelling notebooks for both prediction problems; see [Milestone 2: Modelling](#milestone-2-modelling).
+Interactive Streamlit dashboard for IT5006: exploratory analysis (Milestone 1) and the deployed delivery-time regression model (Milestone 3). The repository also contains the Milestone 2 modelling notebooks for both prediction problems; see [Milestone 2: Modelling](#milestone-2-modelling).
 
 **Live app:** https://team2-it5006-dashboard.streamlit.app/
 
@@ -22,6 +22,27 @@ The duplicate SQLite copy is intentionally excluded because the modelling and da
 ## Deploy
 
 In Streamlit Community Cloud, select this repository and set the entry point to `app.py`.
+
+## Milestone 3: Deployed model
+
+The **Delivery Time Predictor** page (`pages/Delivery_Time_Predictor.py`) serves the final tuned XGBoost regression model from notebook 05 (`models/regression_final_model.joblib`).
+
+Olist data ends in 2018, so the app does not connect to a live order feed. Instead it **replays the held-out Test orders** (6,351 orders purchased 1–29 Aug 2018, never used for fitting) in purchase-time order, as if they were new orders arriving:
+
+- **Live order replay:** press *Next order* / *Next batch* or turn on *Auto-stream*. Each arriving order is scored at that moment and shown with its predicted and promised delivery dates. Its real outcome stays hidden ("In transit") until the simulated clock passes the actual delivery time; running MAE uses delivered orders only.
+- **What-if:** edit promised days, freight, seller history or payment type for one order and re-score it.
+- **Batch scoring:** upload a CSV with the model columns (template provided) and download predictions.
+- **Model performance:** MAE / RMSE and error breakdown on the whole held-out month.
+
+The model predicts `log(delivery_days / promised_delivery_days)`; the app converts back with `promised_delivery_days * exp(prediction)`. Held-out features use seller history frozen at the 2018-08-01 cutoff, exactly as in the notebook's final test evaluation, so the app reproduces the reported Test MAE (2.88 days).
+
+On first load the page rebuilds the held-out features from `data/processed/` and `data/raw/` with `src/features.py` (about 30 s, then cached). Optionally, write them to a file so the page loads faster:
+
+```bash
+python scripts/export_holdout.py   # writes data/app/regression_holdout.csv.gz
+```
+
+`scikit-learn` and `xgboost` are pinned in `requirements.txt` to the versions that saved the model. On Streamlit Community Cloud choose **Python 3.12** under *Advanced settings* (the model was trained with 3.12).
 
 ## Milestone 2: Modelling
 

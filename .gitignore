@@ -8,3 +8,6 @@ data/processed/
 
 # Fitted models are rebuilt by the notebooks
 models/*.joblib
+
+# Optional cache written by scripts/export_holdout.py
+data/app/
