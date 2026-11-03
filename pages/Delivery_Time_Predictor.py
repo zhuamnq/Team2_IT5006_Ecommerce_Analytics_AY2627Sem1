@@ -129,12 +129,34 @@ holdout = load_holdout()
 performance = score_all(model)
 test_mae = (performance.predicted_days - performance.delivery_days).abs().mean()
 
-# ---------------------------------------------------------------- sidebar and state
-st.sidebar.header("Replay settings")
-first_day, last_day = holdout.order_purchase_timestamp.dt.date.agg(["min", "max"])
-start_day = st.sidebar.date_input("Start", first_day, min_value=first_day, max_value=last_day)
-batch_size = st.sidebar.select_slider("Batch size", [10, 50, 100, 250], value=50)
-autoplay = st.sidebar.toggle("Auto-stream", value=False, help="Adds one batch every 2 seconds")
+# ---------------------------------------------------------------- header
+st.title("Delivery Time Predictor")
+st.caption("Replay August 2018 orders the model never saw. Each estimate uses only information known at checkout.")
+st.markdown(
+    f":gray-badge[Held-out: Aug 2018 · {len(holdout):,} orders] :gray-badge[Model: tuned XGBoost] "
+    f":gray-badge[Average error: {test_mae:.2f} days]"
+)
+with st.expander("How to use"):
+    st.markdown(
+        """
+- **Replay**: press **Next order** (or **Next N**) to receive orders in purchase order. Each one is scored on
+  arrival; its real delivery time is shown only after the simulated clock passes it.
+- **Try a scenario**: pick an order, change the promise, freight, seller history or payment type, and compare
+  the new estimate with the original.
+- **Model performance**: accuracy on all held-out orders, error distribution and error by region.
+- **Batch tools**: download the CSV template, fill in orders and upload it to get a prediction for each row.
+"""
+    )
+
+# ---------------------------------------------------------------- replay settings and state
+card = st.container(border=True)
+with card:
+    st.markdown("**LIVE ORDER REPLAY**")
+    first_day, last_day = holdout.order_purchase_timestamp.dt.date.agg(["min", "max"])
+    s1, s2, s3 = st.columns([1, 1.2, 1.1], vertical_alignment="bottom")
+    start_day = s1.date_input("Start", first_day, min_value=first_day, max_value=last_day)
+    batch_size = s2.select_slider("Batch size", [10, 50, 100, 250], value=50)
+    autoplay = s3.toggle("Auto-play", value=False, help="Adds one batch every 2 seconds")
 
 start_index = int(holdout.order_purchase_timestamp.dt.date.searchsorted(start_day))
 state = st.session_state
@@ -172,14 +194,6 @@ if autoplay:
     ticker()
     state.full_run = False
 
-# ---------------------------------------------------------------- header
-st.title("Delivery Time Predictor")
-st.caption("Replay unseen orders and see the delivery estimate available at purchase time.")
-st.markdown(
-    f":gray-badge[Held-out test · {len(holdout):,} orders] :gray-badge[Tuned XGBoost] "
-    f":gray-badge[Test MAE · {test_mae:.2f} days]"
-)
-
 scored = state.replay_scored
 clock = scored.order_purchase_timestamp.max() if len(scored) else None
 feed = scored.assign(delivered=scored.order_delivered_customer_date <= clock) if len(scored) else scored
@@ -190,14 +204,12 @@ if len(scored):
 known = feed[feed.delivered] if len(scored) else feed
 
 # ---------------------------------------------------------------- live order card
-with st.container(border=True):
-    st.markdown("**LIVE ORDER REPLAY**")
-    st.caption(f"Simulated clock: {clock:%d %b %Y, %H:%M}" if clock is not None
-               else f"Starts {start_day:%d %b %Y}")
-    b1, b2, b3, _ = st.columns([1.3, 1.1, 0.9, 2.5])
+with card:
+    b1, b2, b3, clock_col = st.columns([1.3, 1.1, 0.9, 2.5], vertical_alignment="center")
     b1.button("Next order", type="primary", on_click=advance, args=(1,), width="stretch")
     b2.button(f"Next {batch_size}", on_click=advance, args=(batch_size,), width="stretch")
     b3.button("Reset", type="tertiary", on_click=reset, width="stretch")
+    clock_col.caption(f"Simulated clock: {clock:%d %b %Y, %H:%M}" if clock is not None else "")
 
     if not len(scored):
         st.info("Press **Next order** to receive the first order.")
