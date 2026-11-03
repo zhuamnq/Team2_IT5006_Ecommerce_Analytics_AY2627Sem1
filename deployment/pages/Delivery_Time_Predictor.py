@@ -1,4 +1,4 @@
-"""Milestone 3 deployed model: delivery-time regression (Problem B).
+"""Deployed delivery-time regression model (Problem B).
 
 Held-out Test orders (purchased 1-29 Aug 2018, never used for fitting) are replayed in
 purchase-time order as if they were new orders. Each order is scored when it arrives; its
@@ -14,7 +14,7 @@ import plotly.express as px
 import streamlit as st
 
 
-ROOT = Path(__file__).parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 MODEL_PATH = ROOT / "models" / "regression_final_model.joblib"
 HOLDOUT_PATH = ROOT / "data" / "app" / "regression_holdout.csv.gz"
 TABLES = ROOT / "report" / "tables"

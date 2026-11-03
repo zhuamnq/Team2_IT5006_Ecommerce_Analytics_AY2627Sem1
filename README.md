@@ -1,76 +1,224 @@
-# Olist E-commerce Explorer
+# Team 2 Olist E-commerce Analytics
 
-Interactive Streamlit dashboard for IT5006: exploratory analysis (Milestone 1) and the deployed delivery-time regression model (Milestone 3). The repository also contains the Milestone 2 modelling notebooks for both prediction problems; see [Milestone 2: Modelling](#milestone-2-modelling).
+End-to-end IT5006 analytics project using the Olist Brazilian e-commerce
+dataset. The repository contains exploratory analysis, a three-class delivery
+promise experiment, delivery-time regression, and a deployed Streamlit proof
+of concept.
 
-**Live app:** https://team2-it5006-dashboard.streamlit.app/
+**Live application:** https://team2-it5006-dashboard.streamlit.app/
 
-## Run locally
+## Project overview
 
-```bash
-pip install -r requirements.txt
-streamlit run app.py
+The project supports marketplace customer-success and operations teams through
+two analytics problems:
+
+1. **Promise-band classification:** predict whether an order will arrive in
+   less than half of its promised window, between half and the full window, or
+   late.
+2. **Delivery-time regression:** estimate delivery duration relative to the
+   promised window and convert it into an expected delivery date.
+
+The tuned XGBoost regression model is deployed because it provides the stronger
+proof of concept. On 6,351 held-out August 2018 orders it achieved MAE 2.883
+days, RMSE 4.086, and R² 0.112. The revised classification experiment is kept
+for analysis but did not meet its provisional business precision/recall
+criteria. See [`docs/model_card.md`](docs/model_card.md) for limitations.
+
+## Repository structure
+
+```text
+.
+├── data/                  Data (see data/README.md)
+│   ├── raw/               9 original Olist CSV files (committed, read-only)
+│   ├── processed/         Modelling tables rebuilt by the notebooks (git-ignored)
+│   ├── app/               Frozen held-out orders used by the deployed predictor
+│   └── olist_dashboard.csv.gz   Dataset for the EDA Explorer page
+├── notebooks/             EDA, problem scoping, preprocessing, features, modelling
+├── src/                   Reusable config, data, feature and evaluation code
+├── deployment/            Streamlit app (app.py) and its pages
+├── docs/                  Project overview, model card, feedback, AI use, report drafts
+├── models/                Final fitted model loaded by the app
+├── report/
+│   ├── tables/            Result tables written by the notebooks (some read by the app)
+│   └── figures/           Exported figures
+├── scripts/               prepare_data.py, export_holdout.py
+├── tests/                 Deployment smoke tests
+├── requirements.txt       Minimal dependencies for the Streamlit app
+├── requirements-modelling.txt  Full dependencies for re-running the notebooks
+├── environment.yml        Conda alternative to requirements-modelling.txt
+└── README.md
 ```
 
-The committed compressed dataset is derived from the public Olist dataset. The nine source CSV files are stored in `data/raw/`; do not modify them directly. To rebuild the dashboard dataset:
+## Environment
+
+**Reference version: Python 3.12.** The deployed app, the dev container and
+`.python-version` all use 3.12, and the full notebook pipeline was re-run end to
+end on Python 3.12 with `requirements-modelling.txt` before submission.
+
+Team members executed the notebooks on their own machines, so the saved
+notebook metadata records different interpreters (3.9–3.14). The code runs on
+3.12; small numeric differences from the committed outputs are described in
+[Reproducibility check](#reproducibility-check).
+
+| File | Use it for |
+| --- | --- |
+| `requirements.txt` | Running the Streamlit app only (minimal; what Streamlit Cloud installs) |
+| `requirements-modelling.txt` | Re-running the notebooks (includes `requirements.txt`) |
+| `environment.yml` | Same as above, for conda users |
+
+`scikit-learn==1.6.1` and `xgboost==3.2.0` are pinned because the committed
+model was saved with these versions and may not load with others.
+
+## Quick start: run the app
+
+On macOS, install the OpenMP runtime required by XGBoost first:
 
 ```bash
-python prepare_data.py
+brew install libomp
 ```
-
-The duplicate SQLite copy is intentionally excluded because the modelling and dashboard code use the CSV files.
-
-## Deploy
-
-In Streamlit Community Cloud, select this repository and set the entry point to `app.py`.
-
-## Milestone 3: Deployed model
-
-The **Delivery Time Predictor** page (`pages/Delivery_Time_Predictor.py`) serves the final tuned XGBoost regression model from notebook 05 (`models/regression_final_model.joblib`).
-
-Olist data ends in 2018, so the app does not connect to a live order feed. Instead it **replays the held-out Test orders** (6,351 orders purchased 1–29 Aug 2018, never used for fitting) in purchase-time order, as if they were new orders arriving:
-
-- **Live order replay:** press *Next order* / *Next batch* or turn on *Auto-stream*. Each arriving order is scored at that moment and shown with its predicted and promised delivery dates. Its real outcome stays hidden ("In transit") until the simulated clock passes the actual delivery time; running MAE uses delivered orders only.
-- **What-if:** edit promised days, freight, seller history or payment type for one order and re-score it.
-- **Batch scoring:** upload a CSV with the model columns (template provided) and download predictions.
-- **Model performance:** MAE / RMSE and error breakdown on the whole held-out month.
-
-The model predicts `log(delivery_days / promised_delivery_days)`; the app converts back with `promised_delivery_days * exp(prediction)`. Held-out features use seller history frozen at the 2018-08-01 cutoff, exactly as in the notebook's final test evaluation, so the app reproduces the reported Test MAE (2.88 days).
-
-On first load the page rebuilds the held-out features from `data/processed/` and `data/raw/` with `src/features.py` (about 30 s, then cached). Optionally, write them to a file so the page loads faster:
 
 ```bash
-python scripts/export_holdout.py   # writes data/app/regression_holdout.csv.gz
+git clone https://github.com/zhuamnq/Team2_IT5006_Ecommerce_Analytics_AY2627Sem1.git
+cd Team2_IT5006_Ecommerce_Analytics_AY2627Sem1
+python3.12 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+python -m pip install -r requirements.txt
+streamlit run deployment/app.py
 ```
 
-`scikit-learn` and `xgboost` are pinned in `requirements.txt` to the versions that saved the model. On Streamlit Community Cloud choose **Python 3.12** under *Advanced settings* (the model was trained with 3.12).
+The app uses committed, frozen artifacts, so the notebooks do not need to be
+rerun first. On Streamlit Community Cloud the entry point is
+`deployment/app.py` with Python 3.12.
 
-## Milestone 2: Modelling
+## Data and reproducibility
+
+The nine CSV files in `data/raw/` are the unchanged Olist copy supplied through
+the IT5006 Canvas module. Generated modelling tables in `data/processed/` are
+ignored by Git and must be rebuilt. See [`data/README.md`](data/README.md) for
+the table inventory and data policy.
+
+Rebuild the EDA dashboard dataset:
 
 ```bash
-pip install -r requirements-modelling.txt
-jupyter notebook notebooks/
+python scripts/prepare_data.py
 ```
 
-The notebooks need scikit-learn 1.6.1 or later. The saved outputs were produced with Python 3.9 (Problem A notebooks) and Python 3.11 (Problem B notebooks).
+Install the modelling dependencies (or `conda env create -f environment.yml`):
 
-`data/processed/` is not committed. Each problem has its own notebook sequence; run each in order:
+```bash
+python -m pip install -r requirements-modelling.txt
+```
 
-- **Problem A (promise-band classification):** `02_preprocessing_problemA` → `03_feature_engineering_problemA` → `04_classification_promise_band_modeling`
-- **Problem B (delivery-time regression):** `02_preprocessing` → `03_feature_engineering` → `05_regression_delivery_time`
+Run each problem's notebooks in order:
+
+```text
+Shared exploration
+  00_eda
+  01_problem_scoping
+
+Problem A: promise-band classification
+  02_preprocessing_problemA
+  03_feature_engineering_problemA
+  04_classification_promise_band_modeling
+
+Problem B: delivery-time regression
+  02_preprocessing
+  03_feature_engineering
+  05_regression_delivery_time
+```
+
+The two problem chains are independent of each other. On a 2-core machine the full run takes about
+80 minutes, most of it in `03_feature_engineering` (~13 min) and
+`05_regression_delivery_time` (~55 min, hyperparameter search).
+
+For example:
 
 ```bash
 jupyter nbconvert --to notebook --execute --inplace notebooks/02_preprocessing.ipynb
 ```
 
-| Path | Contents |
+All chronological splits, random seeds, label-maturity rules, and leakage
+controls are documented in the notebooks and reusable code under `src/`.
+
+### Reproducibility check
+
+Before submission the whole pipeline was re-run from `data/raw/` on Linux with
+Python 3.12 and `requirements-modelling.txt`:
+
+| Output | Result of the re-run |
 | --- | --- |
-| `notebooks/01_problem_scoping.ipynb` | Early problem scoping and leakage rules. Problem A is framed here as binary late delivery; it was later reframed as the three-band task below |
-| `notebooks/02_preprocessing_problemA.ipynb` | Problem A: order-level cohort, three-band target (`under_half`, `half_to_full`, `late`), label-maturity chronological split, order–seller bridge |
-| `notebooks/03_feature_engineering_problemA.ipynb` | Problem A: point-in-time seller, customer, category, route and marketplace histories; feature screening and validation late-AP ranking; exports the selected 16 features |
-| `notebooks/04_classification_promise_band_modeling.ipynb` | Problem A: Dummy, Logistic Regression and tree models under 4-fold temporal CV; Logistic Regression tuning; refit and final test evaluation; error analysis |
-| `notebooks/02_preprocessing.ipynb` | Problem B: cleaning, time-based train/validation/test split, export to `data/processed/` |
-| `notebooks/03_feature_engineering.ipynb` | Problem B: Part 1 builds the feature tables with `src/features.py` and checks them; Part 2 selects features (Lasso stability selection, permutation importance) |
-| `notebooks/05_regression_delivery_time.ipynb` | Problem B: baseline and Linear Regression, Lasso, Decision Tree, Random Forest and XGBoost under 5-fold time-series CV; tuning; final test evaluation; error analysis; feature importance |
-| `src/` | Reusable config, data loading and splitting, features and evaluation code |
-| `report/` | Report outline, feature engineering plan, and the regression result tables exported by notebook 05 (`report/tables/`) |
-| `data/raw/` | Original Olist CSV files shared by all notebooks and scripts |
+| `data/processed/*.csv.gz`, `data/olist_dashboard.csv.gz` | Same rows, columns and values (to floating-point precision) |
+| Problem B feature selection (`regression_selected_features.*`) | Identical selected features |
+| Problem B Linear, Lasso, Decision Tree and baseline results | Identical |
+| Problem B tuned XGBoost (deployed model) | Test MAE 2.858 vs. 2.883 committed. Two hyperparameter candidates have near-identical CV scores, and the platform (macOS vs. Linux XGBoost builds) decides the tie |
+| Problem A feature selection and classification results | Close but not identical: two near-tied features swap places in the permutation-importance ranking, so later metrics shift |
+
+The committed tables, model and notebook outputs are the team's original runs
+(Problem B: Python 3.12.7, scikit-learn 1.6.1, numpy 1.26.4, pandas 2.2.2,
+xgboost 3.2.0, as recorded in `report/tables/regression_best_params.json`).
+
+## Deployed application
+
+The Streamlit app contains:
+
+- **EDA Explorer:** interactive order, revenue, geography, product, delivery,
+  and review analysis.
+- **Delivery Predictor:** replay of held-out historical orders, what-if
+  scoring, held-out performance diagnostics, and batch CSV prediction.
+
+Olist data ends in 2018, so the predictor simulates incoming orders using the
+held-out August 2018 cohort rather than connecting to a live order feed. The
+deployment layout and required artifacts are documented in
+[`deployment/README.md`](deployment/README.md).
+
+To rebuild the frozen deployment holdout after reproducing the regression
+pipeline:
+
+```bash
+python scripts/export_holdout.py
+```
+
+## Validation
+
+After installing `requirements.txt`, run:
+
+```bash
+python -m unittest discover -s tests -v
+python -m compileall -q deployment src scripts
+```
+
+The smoke test checks the deployment artifacts and scores a small held-out
+batch with the saved model. On macOS the model test is skipped with a clear
+message when `libomp` is not installed.
+
+## Documentation
+
+- [`docs/project_overview.md`](docs/project_overview.md): business problems and end-to-end flow
+- [`docs/model_card.md`](docs/model_card.md): deployed model, results, and limitations
+- [`docs/feedback_actions.md`](docs/feedback_actions.md): instructor feedback resolution
+- [`docs/ai_usage.md`](docs/ai_usage.md): AI-tool declaration
+- [`docs/feature_engineering_plan.md`](docs/feature_engineering_plan.md): Milestone 2 feature engineering plan (English/Chinese)
+- [`docs/report_outline.md`](docs/report_outline.md) and `docs/data_preparation_target_construction.tex`: report drafts
+
+## Known limitations
+
+- Results are based on historical Brazilian marketplace data from 2016–2018.
+- Temporal drift and right-censoring can affect later-period performance.
+- Earlier project iterations inspected the Test period; rerunning cannot
+  recreate a completely independent holdout.
+- The classification model is not presented as deployment-ready.
+
+## Team and attribution
+
+IT5006 AY2026/27 Semester 1, Team 2.
+
+| Member | GitHub | Main responsibilities |
+| --- | --- | --- |
+| Dong Yizhe | `amoeba-aoi` | _to fill_ |
+| Li Zihui | `lizihui06` | _to fill_ |
+| Tor Jia Fu | `jeff-tor` | _to fill_ |
+| Wu Bohan | `Wu-Bohan` | _to fill_ |
+| Zhuang Mingqiao | `zhuamnq` | _to fill_ |
+
+Individual commits are preserved in the Git history and pull requests. AI tools
+used are declared in [`docs/ai_usage.md`](docs/ai_usage.md).

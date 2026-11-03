@@ -1,0 +1,12 @@
+# Full modelling environment (notebooks + app). Reference interpreter: Python 3.12.
+#   conda env create -f environment.yml
+#   conda activate it5006-team2
+# Deployment-only installs use requirements.txt instead.
+name: it5006-team2
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - -r requirements-modelling.txt

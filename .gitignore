@@ -1,5 +1,6 @@
 .DS_Store
 .idea/
+.venv/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
@@ -8,6 +9,8 @@ data/processed/
 
 # Fitted models are rebuilt by the notebooks
 models/*.joblib
+# ...except the final model, which the deployed app loads.
+!models/regression_final_model.joblib
 
 # Keep the generated deployment holdout while ignoring any other app data.
 data/app/*

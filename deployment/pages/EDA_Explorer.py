@@ -5,7 +5,7 @@ import plotly.express as px
 import streamlit as st
 
 
-DATA = Path(__file__).parents[1] / "data" / "olist_dashboard.csv.gz"
+DATA = Path(__file__).resolve().parents[2] / "data" / "olist_dashboard.csv.gz"
 
 
 @st.cache_data
