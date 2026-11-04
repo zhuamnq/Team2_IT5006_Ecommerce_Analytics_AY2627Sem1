@@ -8,9 +8,17 @@ import streamlit as st
 DATA = Path(__file__).parents[1] / "data" / "olist_dashboard.csv.gz"
 
 
-@st.cache_data
-def load_data(version):
-    return pd.read_csv(DATA, parse_dates=["order_purchase_timestamp"])
+@st.cache_resource(show_spinner="Loading dashboard data...")
+def load_data():
+    frame = pd.read_csv(DATA, parse_dates=["order_purchase_timestamp"])
+    for column in frame.select_dtypes("object"):
+        frame[column] = frame[column].astype("category")
+    for column in frame.select_dtypes("integer"):
+        frame[column] = pd.to_numeric(frame[column], downcast="integer")
+    for column in frame.select_dtypes("float"):
+        frame[column] = pd.to_numeric(frame[column], downcast="float")
+    # shortcut: this shared frame must remain read-only; page filters create new frames.
+    return frame
 
 
 def compact_brl(value):
@@ -26,7 +34,7 @@ def multiselect(label, values):
     return st.sidebar.multiselect(label, options, placeholder="All")
 
 
-data = load_data(2)
+data = load_data()
 st.title("🛒 Olist E-commerce Explorer")
 st.caption("Explore when, where and what customers bought, and how delivery performance relates to reviews.")
 
@@ -39,7 +47,7 @@ categories = multiselect("Product category", data.product_category)
 statuses = multiselect("Order status", data.order_status)
 delivery_statuses = multiselect("Delivery status", data.delivery_status)
 
-filtered = data.copy()
+filtered = data
 if len(dates) == 2:
     filtered = filtered[filtered.order_purchase_timestamp.dt.date.between(*dates)]
 for column, selected in {
@@ -67,11 +75,8 @@ k4.metric("Average review", f"{orders.review_score.mean():.2f} / 5")
 k5.metric("Late delivery rate", f"{(delivered.delivery_status == 'Late').mean():.1%}")
 st.caption(f"Showing {len(filtered):,} order items across {len(orders):,} orders.")
 
-overview, geography, products, experience = st.tabs(
-    ["Overview", "Geography", "Products", "Delivery & reviews"]
-)
 
-with overview:
+def show_overview():
     monthly = (
         filtered.assign(month=filtered.order_purchase_timestamp.dt.to_period("M").dt.to_timestamp())
         .groupby("month")
@@ -102,7 +107,8 @@ with overview:
     left.plotly_chart(px.bar(weekday, x="weekday", y="average_orders", title="Average daily orders by weekday"), width="stretch")
     right.plotly_chart(px.line(hourly, x="hour", y="average_orders", markers=True, title="Average hourly order volume"), width="stretch")
 
-with geography:
+
+def show_geography():
     perspective = st.radio("Perspective", ["Customers", "Sellers"], horizontal=True)
     state_col, entity_col = ("customer_state", "customer_unique_id") if perspective == "Customers" else ("seller_state", "seller_id")
     geo_metric = st.radio("Compare states by", ["Orders", perspective, "Revenue", "Late rate"], horizontal=True)
@@ -125,7 +131,8 @@ with geography:
         st.metric("Repeat-customer rate", f"{repeat_rate:.2%}")
         st.plotly_chart(px.bar(repeat.head(10), x="orders_per_customer", y="customers", title="Repeat-customer distribution"), width="stretch")
 
-with products:
+
+def show_products():
     product_metric = st.radio("Rank categories by", ["Items", "Orders", "Revenue", "Unique products"], horizontal=True)
     category = filtered.groupby("product_category").agg(
         Items=("order_item_id", "count"), Orders=("order_id", "nunique"),
@@ -138,7 +145,8 @@ with products:
     )
     st.dataframe(category.sort_values(product_metric, ascending=False), hide_index=True, width="stretch")
 
-with experience:
+
+def show_experience():
     usable = orders.dropna(subset=["review_score", "delivery_days"])
     left, right = st.columns(2)
     left.plotly_chart(
@@ -178,6 +186,34 @@ with experience:
     scatter_right.plotly_chart(px.scatter(price_sample, x="price", y="freight_value", opacity=0.4,
                                            title="Product price vs freight value"), width="stretch")
 
-with st.expander("Filtered data"):
-    st.dataframe(filtered.head(1000), hide_index=True, width="stretch")
-    st.download_button("Download filtered data", filtered.to_csv(index=False), "olist_filtered.csv", "text/csv")
+
+overview, geography, products, experience = st.tabs(
+    ["Overview", "Geography", "Products", "Delivery & reviews"],
+    key="eda_section",
+    on_change="rerun",
+)
+
+if overview.open:
+    with overview:
+        show_overview()
+elif geography.open:
+    with geography:
+        show_geography()
+elif products.open:
+    with products:
+        show_products()
+elif experience.open:
+    with experience:
+        show_experience()
+
+filtered_data = st.expander("Filtered data", on_change="rerun")
+if filtered_data.open:
+    with filtered_data:
+        st.dataframe(filtered.head(1000), hide_index=True, width="stretch")
+        st.download_button(
+            "Download filtered data",
+            lambda: filtered.to_csv(index=False).encode("utf-8"),
+            "olist_filtered.csv",
+            "text/csv",
+            on_click="ignore",
+        )

@@ -235,10 +235,13 @@ with card:
 
 # ---------------------------------------------------------------- tabs
 replay_tab, scenario_tab, performance_tab, batch_tab = st.tabs(
-    ["Replay", "Try a scenario", "Model performance", "Batch tools"]
+    ["Replay", "Try a scenario", "Model performance", "Batch tools"],
+    key="predictor_section",
+    on_change="rerun",
 )
 
-with replay_tab:
+
+def show_replay():
     k1, k2, k3, k4 = st.columns(4)
     k1.metric("Orders received", f"{len(feed):,}")
     k2.metric("Outcomes known", f"{len(known):,}")
@@ -277,7 +280,8 @@ with replay_tab:
             },
         )
 
-with scenario_tab:
+
+def show_scenario():
     st.caption("Adjust inputs and compare the prediction.")
     pool = scored if len(scored) else holdout
     order_id = st.selectbox("Order", pool.order_id.iloc[::-1])
@@ -306,7 +310,8 @@ with scenario_tab:
     m2.metric("Scenario", f"{after:.1f} days", f"{after - before:+.1f} days", delta_color="inverse")
     m3.metric("Buffer vs promise", f"{promised - after:+.1f} days")
 
-with performance_tab:
+
+def show_performance():
     errors = performance.predicted_days - performance.delivery_days
     p1, p2, p3, p4 = st.columns(4)
     p1.metric("Orders", f"{len(performance):,}")
@@ -333,10 +338,17 @@ with performance_tab:
         st.markdown("**All candidates on the test month**")
         st.dataframe(pd.read_csv(metrics_path).round(3), hide_index=True, width="stretch")
 
-with batch_tab:
+
+def show_batch_tools():
     st.caption("Upload orders with the model columns to score them in bulk.")
     template = holdout.head(20)[["order_id", *MODEL_COLUMNS]]
-    st.download_button("Download template CSV", template.to_csv(index=False), "delivery_template.csv", "text/csv")
+    st.download_button(
+        "Download template CSV",
+        lambda: template.to_csv(index=False).encode("utf-8"),
+        "delivery_template.csv",
+        "text/csv",
+        on_click="ignore",
+    )
     upload = st.file_uploader("Orders CSV", type="csv")
     if upload is not None:
         uploaded = pd.read_csv(upload)
@@ -348,3 +360,17 @@ with batch_tab:
             st.dataframe(uploaded, hide_index=True, width="stretch")
             st.download_button("Download predictions", uploaded.to_csv(index=False),
                                "delivery_predictions.csv", "text/csv")
+
+
+if replay_tab.open:
+    with replay_tab:
+        show_replay()
+elif scenario_tab.open:
+    with scenario_tab:
+        show_scenario()
+elif performance_tab.open:
+    with performance_tab:
+        show_performance()
+elif batch_tab.open:
+    with batch_tab:
+        show_batch_tools()
