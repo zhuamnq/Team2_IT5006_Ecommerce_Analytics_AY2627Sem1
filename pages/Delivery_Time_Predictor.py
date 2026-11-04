@@ -233,11 +233,14 @@ with card:
             st.markdown(buffer_badge(latest.buffer_days))
             st.caption(f"Actual: {latest.actual_days:.1f} days" if latest.delivered else "Actual: in transit")
 
-# ---------------------------------------------------------------- tabs
-replay_tab, scenario_tab, performance_tab, batch_tab = st.tabs(
+# ---------------------------------------------------------------- sections
+section = st.radio(
+    "View",
     ["Replay", "Try a scenario", "Model performance", "Batch tools"],
-    key="predictor_section",
-    on_change="rerun",
+    index=0,
+    key="predictor_view",
+    horizontal=True,
+    label_visibility="collapsed",
 )
 
 
@@ -257,7 +260,7 @@ def show_replay():
         )
         top = float(max(known.actual_days.max(), known.predicted_days.max()))
         chart.add_shape(type="line", x0=0, y0=0, x1=top, y1=top, line=dict(dash="dash", color="grey"))
-        st.plotly_chart(chart, width="stretch")
+        st.plotly_chart(chart, use_container_width=True)
 
     if len(feed):
         table = feed.iloc[::-1].head(200).copy()
@@ -323,7 +326,7 @@ def show_performance():
     left.plotly_chart(
         px.histogram(errors.rename("error"), x="error", nbins=80, range_x=[-25, 15],
                      labels={"error": "Predicted − actual (days)"}, title="Error distribution"),
-        width="stretch",
+        use_container_width=True,
     )
     by_region = (performance.assign(abs_error=errors.abs())
                  .groupby("customer_region", as_index=False).abs_error.mean())
@@ -331,7 +334,7 @@ def show_performance():
         px.bar(by_region, x="customer_region", y="abs_error",
                labels={"abs_error": "MAE (days)", "customer_region": "Customer region"},
                title="MAE by customer region"),
-        width="stretch",
+        use_container_width=True,
     )
     metrics_path = TABLES / "regression_test_metrics.csv"
     if metrics_path.exists():
@@ -362,15 +365,11 @@ def show_batch_tools():
                                "delivery_predictions.csv", "text/csv")
 
 
-if replay_tab.open:
-    with replay_tab:
-        show_replay()
-elif scenario_tab.open:
-    with scenario_tab:
-        show_scenario()
-elif performance_tab.open:
-    with performance_tab:
-        show_performance()
-elif batch_tab.open:
-    with batch_tab:
-        show_batch_tools()
+if section == "Try a scenario":
+    show_scenario()
+elif section == "Model performance":
+    show_performance()
+elif section == "Batch tools":
+    show_batch_tools()
+else:
+    show_replay()

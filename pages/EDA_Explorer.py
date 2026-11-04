@@ -87,7 +87,7 @@ def show_overview():
     y = metric.lower()
     st.plotly_chart(
         px.line(monthly, x="month", y=y, markers=True, labels={y: metric, "month": "Month"}),
-        width="stretch",
+        use_container_width=True,
     )
     left, right = st.columns(2)
     weekday_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -104,8 +104,8 @@ def show_overview():
         daily.groupby(["date", "hour"]).order_id.nunique().groupby("hour").mean()
         .reindex(range(24), fill_value=0).reset_index(name="average_orders")
     )
-    left.plotly_chart(px.bar(weekday, x="weekday", y="average_orders", title="Average daily orders by weekday"), width="stretch")
-    right.plotly_chart(px.line(hourly, x="hour", y="average_orders", markers=True, title="Average hourly order volume"), width="stretch")
+    left.plotly_chart(px.bar(weekday, x="weekday", y="average_orders", title="Average daily orders by weekday"), use_container_width=True)
+    right.plotly_chart(px.line(hourly, x="hour", y="average_orders", markers=True, title="Average hourly order volume"), use_container_width=True)
 
 
 def show_geography():
@@ -120,7 +120,7 @@ def show_geography():
     shown = grouped.reset_index().nlargest(15, geo_metric).sort_values(geo_metric)
     st.plotly_chart(
         px.bar(shown, x=geo_metric, y=state_col, orientation="h", title=f"Top {perspective.lower()} states by {geo_metric.lower()}"),
-        width="stretch",
+        use_container_width=True,
     )
     if perspective == "Customers":
         repeat = (
@@ -129,7 +129,7 @@ def show_geography():
         )
         repeat_rate = (orders.groupby("customer_unique_id").order_id.nunique() > 1).mean()
         st.metric("Repeat-customer rate", f"{repeat_rate:.2%}")
-        st.plotly_chart(px.bar(repeat.head(10), x="orders_per_customer", y="customers", title="Repeat-customer distribution"), width="stretch")
+        st.plotly_chart(px.bar(repeat.head(10), x="orders_per_customer", y="customers", title="Repeat-customer distribution"), use_container_width=True)
 
 
 def show_products():
@@ -141,7 +141,7 @@ def show_products():
     shown = category.nlargest(15, product_metric).sort_values(product_metric)
     st.plotly_chart(
         px.bar(shown, x=product_metric, y="product_category", orientation="h", title=f"Top categories by {product_metric.lower()}"),
-        width="stretch",
+        use_container_width=True,
     )
     st.dataframe(category.sort_values(product_metric, ascending=False), hide_index=True, width="stretch")
 
@@ -151,12 +151,12 @@ def show_experience():
     left, right = st.columns(2)
     left.plotly_chart(
         px.box(usable[usable.delivery_days.between(0, 60)], x="review_score", y="delivery_days", title="Delivery time by review score (0–60 days)"),
-        width="stretch",
+        use_container_width=True,
     )
     review_status = usable.groupby("delivery_status", as_index=False).review_score.mean()
     right.plotly_chart(
         px.bar(review_status, x="delivery_status", y="review_score", range_y=[0, 5], title="Average review by delivery status"),
-        width="stretch",
+        use_container_width=True,
     )
     order_level = filtered.groupby("order_id", as_index=False).agg(
         order_value=("price", "sum"), freight_value=("freight_value", "sum"),
@@ -172,48 +172,44 @@ def show_experience():
         px.imshow(order_level[overall_columns].corr().round(2), text_auto=True,
                   color_continuous_scale="RdBu_r", zmin=-1, zmax=1,
                   title="Overall correlation matrix at order level"),
-        width="stretch",
+        use_container_width=True,
     )
     correlation_columns = ["price", "freight_value", "product_weight_g", "product_length_cm", "product_height_cm", "product_width_cm"]
     corr = filtered[correlation_columns].corr().round(2)
     st.plotly_chart(px.imshow(corr, text_auto=True, color_continuous_scale="RdBu_r", zmin=-1, zmax=1,
-                              title="Correlation matrix of product and freight variables"), width="stretch")
+                              title="Correlation matrix of product and freight variables"), use_container_width=True)
     scatter_left, scatter_right = st.columns(2)
     sample = filtered.dropna(subset=["product_weight_g", "freight_value"]).sample(min(3000, filtered.dropna(subset=["product_weight_g", "freight_value"]).shape[0]), random_state=42)
     scatter_left.plotly_chart(px.scatter(sample, x="product_weight_g", y="freight_value", opacity=0.4,
-                                          title="Product weight vs freight value"), width="stretch")
+                                          title="Product weight vs freight value"), use_container_width=True)
     price_sample = filtered.dropna(subset=["price", "freight_value"]).sample(min(3000, filtered.dropna(subset=["price", "freight_value"]).shape[0]), random_state=42)
     scatter_right.plotly_chart(px.scatter(price_sample, x="price", y="freight_value", opacity=0.4,
-                                           title="Product price vs freight value"), width="stretch")
+                                           title="Product price vs freight value"), use_container_width=True)
 
 
-overview, geography, products, experience = st.tabs(
+section = st.radio(
+    "Explore",
     ["Overview", "Geography", "Products", "Delivery & reviews"],
-    key="eda_section",
-    on_change="rerun",
+    index=0,
+    key="eda_view",
+    horizontal=True,
 )
 
-if overview.open:
-    with overview:
-        show_overview()
-elif geography.open:
-    with geography:
-        show_geography()
-elif products.open:
-    with products:
-        show_products()
-elif experience.open:
-    with experience:
-        show_experience()
+if section == "Geography":
+    show_geography()
+elif section == "Products":
+    show_products()
+elif section == "Delivery & reviews":
+    show_experience()
+else:
+    show_overview()
 
-filtered_data = st.expander("Filtered data", on_change="rerun")
-if filtered_data.open:
-    with filtered_data:
-        st.dataframe(filtered.head(1000), hide_index=True, width="stretch")
-        st.download_button(
-            "Download filtered data",
-            lambda: filtered.to_csv(index=False).encode("utf-8"),
-            "olist_filtered.csv",
-            "text/csv",
-            on_click="ignore",
-        )
+if st.toggle("Show filtered data", key="show_filtered_data"):
+    st.dataframe(filtered.head(1000), hide_index=True, width="stretch")
+    st.download_button(
+        "Download filtered data",
+        lambda: filtered.to_csv(index=False).encode("utf-8"),
+        "olist_filtered.csv",
+        "text/csv",
+        on_click="ignore",
+    )
