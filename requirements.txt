@@ -1,6 +1,6 @@
 # Minimal dependencies for the deployed Streamlit app (Python 3.12).
 # For the notebooks, install requirements-modelling.txt or environment.yml instead.
-streamlit>=1.48,<2
+streamlit==1.50.0
 pandas>=2.1,<3
 plotly>=5.20,<7
 # Delivery-time model (deployment/pages/Delivery_Time_Predictor.py). Pinned to the versions

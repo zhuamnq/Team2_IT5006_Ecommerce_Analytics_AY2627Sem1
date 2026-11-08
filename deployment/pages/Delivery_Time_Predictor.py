@@ -233,12 +233,18 @@ with card:
             st.markdown(buffer_badge(latest.buffer_days))
             st.caption(f"Actual: {latest.actual_days:.1f} days" if latest.delivered else "Actual: in transit")
 
-# ---------------------------------------------------------------- tabs
-replay_tab, scenario_tab, performance_tab, batch_tab = st.tabs(
-    ["Replay", "Try a scenario", "Model performance", "Batch tools"]
+# ---------------------------------------------------------------- sections
+section = st.radio(
+    "View",
+    ["Replay", "Try a scenario", "Model performance", "Batch tools"],
+    index=0,
+    key="predictor_view",
+    horizontal=True,
+    label_visibility="collapsed",
 )
 
-with replay_tab:
+
+def show_replay():
     k1, k2, k3, k4 = st.columns(4)
     k1.metric("Orders received", f"{len(feed):,}")
     k2.metric("Outcomes known", f"{len(known):,}")
@@ -254,7 +260,7 @@ with replay_tab:
         )
         top = float(max(known.actual_days.max(), known.predicted_days.max()))
         chart.add_shape(type="line", x0=0, y0=0, x1=top, y1=top, line=dict(dash="dash", color="grey"))
-        st.plotly_chart(chart, width="stretch")
+        st.plotly_chart(chart, use_container_width=True)
 
     if len(feed):
         table = feed.iloc[::-1].head(200).copy()
@@ -277,7 +283,8 @@ with replay_tab:
             },
         )
 
-with scenario_tab:
+
+def show_scenario():
     st.caption("Adjust inputs and compare the prediction.")
     pool = scored if len(scored) else holdout
     order_id = st.selectbox("Order", pool.order_id.iloc[::-1])
@@ -306,7 +313,8 @@ with scenario_tab:
     m2.metric("Scenario", f"{after:.1f} days", f"{after - before:+.1f} days", delta_color="inverse")
     m3.metric("Buffer vs promise", f"{promised - after:+.1f} days")
 
-with performance_tab:
+
+def show_performance():
     errors = performance.predicted_days - performance.delivery_days
     p1, p2, p3, p4 = st.columns(4)
     p1.metric("Orders", f"{len(performance):,}")
@@ -318,7 +326,7 @@ with performance_tab:
     left.plotly_chart(
         px.histogram(errors.rename("error"), x="error", nbins=80, range_x=[-25, 15],
                      labels={"error": "Predicted − actual (days)"}, title="Error distribution"),
-        width="stretch",
+        use_container_width=True,
     )
     by_region = (performance.assign(abs_error=errors.abs())
                  .groupby("customer_region", as_index=False).abs_error.mean())
@@ -326,17 +334,24 @@ with performance_tab:
         px.bar(by_region, x="customer_region", y="abs_error",
                labels={"abs_error": "MAE (days)", "customer_region": "Customer region"},
                title="MAE by customer region"),
-        width="stretch",
+        use_container_width=True,
     )
     metrics_path = TABLES / "regression_test_metrics.csv"
     if metrics_path.exists():
         st.markdown("**All candidates on the test month**")
         st.dataframe(pd.read_csv(metrics_path).round(3), hide_index=True, width="stretch")
 
-with batch_tab:
+
+def show_batch_tools():
     st.caption("Upload orders with the model columns to score them in bulk.")
     template = holdout.head(20)[["order_id", *MODEL_COLUMNS]]
-    st.download_button("Download template CSV", template.to_csv(index=False), "delivery_template.csv", "text/csv")
+    st.download_button(
+        "Download template CSV",
+        template.to_csv(index=False).encode("utf-8"),
+        "delivery_template.csv",
+        "text/csv",
+        on_click="ignore",
+    )
     upload = st.file_uploader("Orders CSV", type="csv")
     if upload is not None:
         uploaded = pd.read_csv(upload)
@@ -348,3 +363,13 @@ with batch_tab:
             st.dataframe(uploaded, hide_index=True, width="stretch")
             st.download_button("Download predictions", uploaded.to_csv(index=False),
                                "delivery_predictions.csv", "text/csv")
+
+
+if section == "Try a scenario":
+    show_scenario()
+elif section == "Model performance":
+    show_performance()
+elif section == "Batch tools":
+    show_batch_tools()
+else:
+    show_replay()

@@ -8,9 +8,17 @@ import streamlit as st
 DATA = Path(__file__).resolve().parents[2] / "data" / "olist_dashboard.csv.gz"
 
 
-@st.cache_data
-def load_data(version):
-    return pd.read_csv(DATA, parse_dates=["order_purchase_timestamp"])
+@st.cache_resource(show_spinner="Loading dashboard data...")
+def load_data():
+    frame = pd.read_csv(DATA, parse_dates=["order_purchase_timestamp"])
+    for column in frame.select_dtypes("object"):
+        frame[column] = frame[column].astype("category")
+    for column in frame.select_dtypes("integer"):
+        frame[column] = pd.to_numeric(frame[column], downcast="integer")
+    for column in frame.select_dtypes("float"):
+        frame[column] = pd.to_numeric(frame[column], downcast="float")
+    # shortcut: this shared frame must remain read-only; page filters create new frames.
+    return frame
 
 
 def compact_brl(value):
@@ -26,7 +34,7 @@ def multiselect(label, values):
     return st.sidebar.multiselect(label, options, placeholder="All")
 
 
-data = load_data(2)
+data = load_data()
 st.title("🛒 Olist E-commerce Explorer")
 st.caption("Explore when, where and what customers bought, and how delivery performance relates to reviews.")
 
@@ -39,7 +47,7 @@ categories = multiselect("Product category", data.product_category)
 statuses = multiselect("Order status", data.order_status)
 delivery_statuses = multiselect("Delivery status", data.delivery_status)
 
-filtered = data.copy()
+filtered = data
 if len(dates) == 2:
     filtered = filtered[filtered.order_purchase_timestamp.dt.date.between(*dates)]
 for column, selected in {
@@ -67,11 +75,8 @@ k4.metric("Average review", f"{orders.review_score.mean():.2f} / 5")
 k5.metric("Late delivery rate", f"{(delivered.delivery_status == 'Late').mean():.1%}")
 st.caption(f"Showing {len(filtered):,} order items across {len(orders):,} orders.")
 
-overview, geography, products, experience = st.tabs(
-    ["Overview", "Geography", "Products", "Delivery & reviews"]
-)
 
-with overview:
+def show_overview():
     monthly = (
         filtered.assign(month=filtered.order_purchase_timestamp.dt.to_period("M").dt.to_timestamp())
         .groupby("month")
@@ -82,7 +87,7 @@ with overview:
     y = metric.lower()
     st.plotly_chart(
         px.line(monthly, x="month", y=y, markers=True, labels={y: metric, "month": "Month"}),
-        width="stretch",
+        use_container_width=True,
     )
     left, right = st.columns(2)
     weekday_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -99,10 +104,11 @@ with overview:
         daily.groupby(["date", "hour"]).order_id.nunique().groupby("hour").mean()
         .reindex(range(24), fill_value=0).reset_index(name="average_orders")
     )
-    left.plotly_chart(px.bar(weekday, x="weekday", y="average_orders", title="Average daily orders by weekday"), width="stretch")
-    right.plotly_chart(px.line(hourly, x="hour", y="average_orders", markers=True, title="Average hourly order volume"), width="stretch")
+    left.plotly_chart(px.bar(weekday, x="weekday", y="average_orders", title="Average daily orders by weekday"), use_container_width=True)
+    right.plotly_chart(px.line(hourly, x="hour", y="average_orders", markers=True, title="Average hourly order volume"), use_container_width=True)
 
-with geography:
+
+def show_geography():
     perspective = st.radio("Perspective", ["Customers", "Sellers"], horizontal=True)
     state_col, entity_col = ("customer_state", "customer_unique_id") if perspective == "Customers" else ("seller_state", "seller_id")
     geo_metric = st.radio("Compare states by", ["Orders", perspective, "Revenue", "Late rate"], horizontal=True)
@@ -114,7 +120,7 @@ with geography:
     shown = grouped.reset_index().nlargest(15, geo_metric).sort_values(geo_metric)
     st.plotly_chart(
         px.bar(shown, x=geo_metric, y=state_col, orientation="h", title=f"Top {perspective.lower()} states by {geo_metric.lower()}"),
-        width="stretch",
+        use_container_width=True,
     )
     if perspective == "Customers":
         repeat = (
@@ -123,9 +129,10 @@ with geography:
         )
         repeat_rate = (orders.groupby("customer_unique_id").order_id.nunique() > 1).mean()
         st.metric("Repeat-customer rate", f"{repeat_rate:.2%}")
-        st.plotly_chart(px.bar(repeat.head(10), x="orders_per_customer", y="customers", title="Repeat-customer distribution"), width="stretch")
+        st.plotly_chart(px.bar(repeat.head(10), x="orders_per_customer", y="customers", title="Repeat-customer distribution"), use_container_width=True)
 
-with products:
+
+def show_products():
     product_metric = st.radio("Rank categories by", ["Items", "Orders", "Revenue", "Unique products"], horizontal=True)
     category = filtered.groupby("product_category").agg(
         Items=("order_item_id", "count"), Orders=("order_id", "nunique"),
@@ -134,21 +141,22 @@ with products:
     shown = category.nlargest(15, product_metric).sort_values(product_metric)
     st.plotly_chart(
         px.bar(shown, x=product_metric, y="product_category", orientation="h", title=f"Top categories by {product_metric.lower()}"),
-        width="stretch",
+        use_container_width=True,
     )
     st.dataframe(category.sort_values(product_metric, ascending=False), hide_index=True, width="stretch")
 
-with experience:
+
+def show_experience():
     usable = orders.dropna(subset=["review_score", "delivery_days"])
     left, right = st.columns(2)
     left.plotly_chart(
         px.box(usable[usable.delivery_days.between(0, 60)], x="review_score", y="delivery_days", title="Delivery time by review score (0–60 days)"),
-        width="stretch",
+        use_container_width=True,
     )
     review_status = usable.groupby("delivery_status", as_index=False).review_score.mean()
     right.plotly_chart(
         px.bar(review_status, x="delivery_status", y="review_score", range_y=[0, 5], title="Average review by delivery status"),
-        width="stretch",
+        use_container_width=True,
     )
     order_level = filtered.groupby("order_id", as_index=False).agg(
         order_value=("price", "sum"), freight_value=("freight_value", "sum"),
@@ -164,20 +172,44 @@ with experience:
         px.imshow(order_level[overall_columns].corr().round(2), text_auto=True,
                   color_continuous_scale="RdBu_r", zmin=-1, zmax=1,
                   title="Overall correlation matrix at order level"),
-        width="stretch",
+        use_container_width=True,
     )
     correlation_columns = ["price", "freight_value", "product_weight_g", "product_length_cm", "product_height_cm", "product_width_cm"]
     corr = filtered[correlation_columns].corr().round(2)
     st.plotly_chart(px.imshow(corr, text_auto=True, color_continuous_scale="RdBu_r", zmin=-1, zmax=1,
-                              title="Correlation matrix of product and freight variables"), width="stretch")
+                              title="Correlation matrix of product and freight variables"), use_container_width=True)
     scatter_left, scatter_right = st.columns(2)
     sample = filtered.dropna(subset=["product_weight_g", "freight_value"]).sample(min(3000, filtered.dropna(subset=["product_weight_g", "freight_value"]).shape[0]), random_state=42)
     scatter_left.plotly_chart(px.scatter(sample, x="product_weight_g", y="freight_value", opacity=0.4,
-                                          title="Product weight vs freight value"), width="stretch")
+                                          title="Product weight vs freight value"), use_container_width=True)
     price_sample = filtered.dropna(subset=["price", "freight_value"]).sample(min(3000, filtered.dropna(subset=["price", "freight_value"]).shape[0]), random_state=42)
     scatter_right.plotly_chart(px.scatter(price_sample, x="price", y="freight_value", opacity=0.4,
-                                           title="Product price vs freight value"), width="stretch")
+                                           title="Product price vs freight value"), use_container_width=True)
 
-with st.expander("Filtered data"):
+
+section = st.radio(
+    "Explore",
+    ["Overview", "Geography", "Products", "Delivery & reviews"],
+    index=0,
+    key="eda_view",
+    horizontal=True,
+)
+
+if section == "Geography":
+    show_geography()
+elif section == "Products":
+    show_products()
+elif section == "Delivery & reviews":
+    show_experience()
+else:
+    show_overview()
+
+if st.toggle("Show filtered data", key="show_filtered_data"):
     st.dataframe(filtered.head(1000), hide_index=True, width="stretch")
-    st.download_button("Download filtered data", filtered.to_csv(index=False), "olist_filtered.csv", "text/csv")
+    st.download_button(
+        "Download filtered data",
+        filtered.to_csv(index=False).encode("utf-8"),
+        "olist_filtered.csv",
+        "text/csv",
+        on_click="ignore",
+    )

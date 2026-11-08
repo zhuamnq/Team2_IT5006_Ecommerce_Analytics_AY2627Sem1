@@ -212,13 +212,13 @@ message when `libomp` is not installed.
 
 IT5006 AY2026/27 Semester 1, Team 2.
 
-| Member | GitHub | Main responsibilities |
-| --- | --- | --- |
-| Dong Yizhe | `amoeba-aoi` | _to fill_ |
-| Li Zihui | `lizihui06` | _to fill_ |
-| Tor Jia Fu | `jeff-tor` | _to fill_ |
-| Wu Bohan | `Wu-Bohan` | _to fill_ |
-| Zhuang Mingqiao | `zhuamnq` | _to fill_ |
+| Member | GitHub |
+| --- | --- |
+| Dong Yizhe | `amoeba-aoi` |
+| Li Zihui | `lizihui06` |
+| Tor Jia Fu | `jeff-tor` |
+| Wu Bohan | `Wu-Bohan` |
+| Zhuang Mingqiao | `zhuamnq` |
 
 Individual commits are preserved in the Git history and pull requests. AI tools
 used are declared in [`docs/ai_usage.md`](docs/ai_usage.md).
