@@ -1,0 +1,55 @@
+\section{Data Preparation and Target Construction}
+\label{sec:data_preparation}
+
+\subsection{Data Sources and Unit of Analysis}
+
+The preprocessing pipeline used eight tables from the Brazilian Olist e-commerce dataset: orders, order items, products, customers, sellers, payments, geolocation, and the product-category translation table. The orders table contained 99,441 unique orders, while the order-items table contained 112,650 rows belonging to 98,666 orders. The remaining source tables contained 32,951 products, 99,441 customer records, 3,095 sellers, 103,886 payment records, and 1,000,163 geolocation observations. The product-category translation table was used to convert the original category labels into English. The review table was deliberately excluded because reviews are generated after delivery and would not be available when a delivery prediction is made.
+
+The unit of analysis was one order, identified by \texttt{order\_id}. This choice was determined by the outcome data: actual and estimated delivery timestamps are recorded only at order level, not for individual items or packages. Directly modelling order-item rows would therefore repeat the same delivery outcome for items within an order. This is material because 9,803 orders contained more than one item, 3,236 contained more than one distinct product, and 1,278 involved multiple sellers. Item-, product-, seller-, and payment-level information was consequently aggregated before it was joined to the order table. A separate order--seller bridge was retained so that the many-to-many seller relationship was not reduced to a single seller identifier.
+
+\subsection{Data Cleaning and Integration}
+
+The eligible cohort was restricted to orders with status \texttt{delivered}, a non-missing actual delivery timestamp, a non-missing estimated delivery date, and a purchase timestamp no later than 31 August 2018. Orders that were shipped, cancelled, unavailable, invoiced, processing, created, or approved were not treated as on-time observations because their final delivery outcome was unknown. Of the 96,478 records labelled as delivered, eight lacked an actual delivery timestamp, leaving 96,470 eligible orders before product-level cleaning. September and October 2018 purchases were excluded because they did not form completed delivered cohorts in the data.
+
+Product records were joined to the English category translation and then to order items. Missing category translations were represented as \texttt{Unknown}. For each item, volume was calculated as length $\times$ height $\times$ width; the longest side and the sum of dimensions were also derived. The order-level aggregation included total, mean, and maximum price information; total freight; item, product, seller, seller-state, and category counts; total and maximum weight; total volume; the longest observed item side; and the maximum item-level sum of dimensions. Sixteen otherwise eligible orders contained at least one item with a missing weight or dimension. These orders were removed because summing the remaining measurements would understate their shipment size. No order had a non-positive delivery duration. The resulting modelling cohort contained 96,454 unique orders.
+
+Only product category and physical shipment attributes were selected from the product table. Product-name length, description length, and photo count were not used in the final exports. Item identifiers and product identifiers were used to validate or aggregate the source records but were not retained as predictors. Likewise, payment sequence numbers were not retained after the order-level payment aggregation.
+
+Payment records were aggregated by order. The resulting variables included total payment value, maximum number of instalments, number of distinct payment types, the first recorded payment type, and an indicator showing whether any component of a mixed payment used a voucher. One order had no matching payment summary. It was retained, with \texttt{payment\_missing} set to one, \texttt{payment\_type} set to \texttt{Unknown}, and \texttt{used\_voucher} set to zero. The remaining missing payment values were not globally imputed at this stage.
+
+The raw geolocation table could not be joined directly because a five-digit zip-code prefix can appear in many coordinate rows. Coordinates outside the approximate Brazilian bounds of latitude $[-34,6]$ and longitude $[-74,-34]$ were first removed. The remaining observations were reduced to one median latitude and longitude per zip-code prefix, together with the number of valid geolocation observations for that prefix. These coordinates represent zip-prefix areas rather than exact customer or seller addresses. Seller-to-customer distance was therefore estimated using the Haversine great-circle formula. For multi-seller orders, minimum, mean, and maximum distance were calculated across the distinct sellers. The pipeline also created all-seller and any-seller indicators for same-state and same-city routes. Orders with a missing customer coordinate or at least one unlocated seller were retained and marked using \texttt{geolocation\_missing}; 481 orders received this flag.
+
+Additional purchase-time features were derived from the integrated data. These included customer and primary-seller macro-regions, the corresponding region pair, whether the customer was located in a state capital or in a predefined remote state, a multi-seller indicator, volumetric weight (total volume divided by 6,000), billable weight (the larger of actual and volumetric weight), shipment density, and the number of valid geolocation points in the customer zip prefix. City names were normalised by removing accents and converting them to lower case before city-level comparisons. Extreme delivery times, prices, freight values, weights, volumes, and item counts were inspected but not removed or clipped. Similarly, no global encoding, scaling, or statistical imputation was performed; such transformations are to be fitted using training data only in the modelling pipelines.
+
+Three compressed outputs were produced. \texttt{late\_delivery\_classification.csv.gz} and \texttt{delivery\_time\_regression.csv.gz} each contain 96,454 order-level rows and 52 columns, with common predictors but different targets. \texttt{order\_seller\_bridge.csv.gz} contains 97,795 unique \texttt{order\_id}--\texttt{seller\_id} combinations and preserves seller-specific item counts, order value, freight value, location, and estimated customer distance for subsequent time-aware seller-history features.
+
+\subsection{Target Definitions}
+
+The classification target, \texttt{is\_late}, indicates whether an order was delivered after the platform's estimated delivery date. It was defined using calendar dates:
+
+\begin{equation}
+\mathrm{is\_late} =
+\mathbf{1}\!\left[
+\mathrm{date}(t_{\mathrm{actual}}) >
+\mathrm{date}(t_{\mathrm{estimated}})
+\right].
+\end{equation}
+
+Calendar-date comparison was necessary because estimated delivery dates are stored at midnight. Comparing the full timestamps would incorrectly classify deliveries made during the promised date as late. Before product-measurement cleaning, the timestamp rule identified 7,826 late deliveries, whereas the calendar-date rule identified 6,534; the difference consisted of 1,292 orders delivered during their promised date. The final classification dataset retained 6,534 late orders, corresponding to a positive-class rate of approximately 6.77\%.
+
+The regression target, \texttt{delivery\_days}, measures the continuous elapsed time from purchase to actual customer delivery:
+
+\begin{equation}
+\mathrm{delivery\_days} =
+\frac{t_{\mathrm{actual}}-t_{\mathrm{purchase}}}{86{,}400}.
+\end{equation}
+
+The division by 86,400 converts seconds to days while retaining fractional days. In the final cohort, the mean delivery duration was 12.56 days and the median was 10.22 days. The platform-provided estimated delivery date was not exported as a raw feature. Instead, it was converted into \texttt{promised\_delivery\_days}, defined as the calendar-day difference between the estimated delivery date and purchase date. This variable represents the delivery window communicated by the platform and is available at the defined prediction point; it is not calculated from the realised delivery outcome.
+
+\subsection{Data Leakage Prevention}
+
+The prediction point was defined as the time of purchase, after the platform's estimated delivery date was available. Features created after this point were not included as predictors. In particular, \texttt{order\_approved\_at}, \texttt{shipping\_limit\_date}, \texttt{order\_delivered\_carrier\_date}, \texttt{order\_delivered\_customer\_date}, final \texttt{order\_status}, review variables, and derived post-outcome fields such as delay status were excluded from both modelling tables. Actual delivery timestamps were used only to construct the two targets. The raw estimated delivery timestamp was used only to construct \texttt{is\_late} and \texttt{promised\_delivery\_days}. Customer identifiers were removed, while \texttt{order\_id} was retained solely for joins and auditing and must not be supplied to a model.
+
+The data were partitioned chronologically rather than randomly. Orders purchased up to 30 June 2018 formed the training set (83,947 orders), July 2018 formed the validation set (6,156), and August 2018 formed the test set (6,351). The late-delivery rates were 7.07\%, 3.38\%, and 6.19\%, respectively, demonstrating that the target distribution changed over time and supporting the use of a temporal holdout. Preprocessing operations that learn distributional parameters, including missing-value imputation, category encoding, scaling, and any outlier treatment, were intentionally deferred until after this split and must be fitted on the training partition only.
+
+Seller-history and route-history variables were not computed using full-dataset averages. The order--seller bridge was exported so that any such variables can be constructed in the feature-engineering stage using only events observable before each current order's purchase timestamp, followed by aggregation back to one row per order. This prevents validation and test outcomes, or later orders from the same seller, from entering earlier observations.

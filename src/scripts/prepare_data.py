@@ -1,10 +1,15 @@
+"""Build data/olist_dashboard.csv.gz, the dataset used by the EDA Explorer page."""
+import sys
 from pathlib import Path
 
 import pandas as pd
 
-from src.config import RAW, validate_data_path
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
 
-OUT = Path(__file__).with_name("data") / "olist_dashboard.csv.gz"
+from src.config import RAW, validate_data_path  # noqa: E402
+
+OUT = ROOT / "data" / "olist_dashboard.csv.gz"
 
 
 def main():

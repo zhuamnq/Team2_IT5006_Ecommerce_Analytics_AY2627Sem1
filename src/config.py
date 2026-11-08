@@ -7,9 +7,9 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw"
 PROCESSED = ROOT / "data" / "processed"
-FIGURES = ROOT / "report" / "figures"
-TABLES = ROOT / "report" / "tables"
-MODELS = ROOT / "models"
+FIGURES = ROOT / "docs" / "report" / "figures"
+TABLES = ROOT / "docs" / "report" / "tables"
+MODELS = ROOT / "deployment" / "models"
 
 RAW_FILES = [
     "olist_customers_dataset.csv",

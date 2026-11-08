@@ -272,7 +272,7 @@ Person B's features need no input from Person A, so both can start immediately.
 
 1. **The validation month is unrepresentative.** Late rate: train 7.1%, **validation 3.4%** (July 2018), test 6.2%. Do not tune the decision threshold or choose models on validation alone; use `TimeSeriesSplit` on train, or merge validation into train.
 2. **`same_state` changed meaning.** It is now 1 only if **all** sellers are in the customer's state (`any_seller_same_state` = at least one), which changes 126 orders compared with the first file. Document this in the report.
-3. ✅ **Problem B wording.** `notebooks/01_problem_scoping.ipynb`, `notebooks/05_regression_delivery_time.ipynb` (renamed from `05_regression_freight.ipynb`) and `report/report_outline.md` now describe delivery time as Problem B.
+3. ✅ **Problem B wording.** `notebooks/01_problem_scoping.ipynb`, `notebooks/05_regression_delivery_time.ipynb` (renamed from `05_regression_freight.ipynb`) and `docs/report_outline.md` now describe delivery time as Problem B.
 4. **`purchase_month`** must be converted before modelling (Section 6.2).
 5. **`seller_avg_handling_days`** would need the raw delivered-to-carrier date. It is optional; drop it unless there is time.
 6. **The test month is right-censored.** The data end at the last recorded delivery (2018-10-17), so an August order appears only if it arrived within 46 days, about the 99th percentile of `delivery_days`. The slowest test deliveries are missing. Report as a limitation; it cannot be corrected (`notebooks/02_preprocessing.ipynb`, section 7.2).
@@ -545,7 +545,7 @@ Lasso 是带 L1 惩罚项的线性模型。与树模型相比，它不能处理�
 
 1. **验证集月份不具代表性。** 延迟率：训练集 7.1%，**验证集 3.4%**（2018 年 7 月），测试集 6.2%。不要只用验证集来调整分类阈值或选择模型；应在训练集上使用 `TimeSeriesSplit`，或把验证集并入训练集。
 2. **`same_state` 含义已改变。** 现在只有**所有**卖家都与买家同州时才为 1（`any_seller_same_state` = 至少一个），与第一版文件相比有 126 个订单发生变化。需在报告中说明。
-3. ✅ **问题 B 的描述。** `notebooks/01_problem_scoping.ipynb`、`notebooks/05_regression_delivery_time.ipynb`（由 `05_regression_freight.ipynb` 改名）和 `report/report_outline.md` 现已把送达时长写作问题 B。
+3. ✅ **问题 B 的描述。** `notebooks/01_problem_scoping.ipynb`、`notebooks/05_regression_delivery_time.ipynb`（由 `05_regression_freight.ipynb` 改名）和 `docs/report_outline.md` 现已把送达时长写作问题 B。
 4. **`purchase_month`** 建模前必须转换（第 6.2 节）。
 5. **`seller_avg_handling_days`** 需要原始数据中的交给承运商日期。属于可选项；时间不够就放弃。
 6. **测试集月份存在右删失。** 数据截止于最后一次记录的送达（2018-10-17），因此 8 月的订单只有在 46 天内送达才会出现在数据中，约为 `delivery_days` 的第 99 百分位。测试集中最慢的配送因此缺失。应作为局限性写入报告；无法修正（见 `notebooks/02_preprocessing.ipynb` 第 7.2 节）。
