@@ -10,10 +10,10 @@ streamlit run deployment/app.py
 
 Required deployment artifacts are committed:
 
-- `models/regression_final_model.joblib`
+- `deployment/models/regression_final_model.joblib`
 - `data/app/regression_holdout.csv.gz`
-- `report/tables/regression_selected_features.json`
-- `report/tables/regression_test_metrics.csv`
+- `docs/report/tables/regression_selected_features.json`
+- `docs/report/tables/regression_test_metrics.csv`
 
 Streamlit Community Cloud should use Python 3.12 and `deployment/app.py` as its
 entry point. No credentials or secrets are required.

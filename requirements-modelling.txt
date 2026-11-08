@@ -1,6 +1,6 @@
 # Full environment for re-running the notebooks (Python 3.12).
 # Includes the deployment requirements, which pin scikit-learn and xgboost to the
-# versions that saved models/regression_final_model.joblib.
+# versions that saved deployment/models/regression_final_model.joblib.
 -r requirements.txt
 numpy>=1.26,<3
 matplotlib>=3.8,<4

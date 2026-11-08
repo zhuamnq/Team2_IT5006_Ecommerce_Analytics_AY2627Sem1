@@ -15,9 +15,9 @@ import streamlit as st
 
 
 ROOT = Path(__file__).resolve().parents[2]
-MODEL_PATH = ROOT / "models" / "regression_final_model.joblib"
+MODEL_PATH = ROOT / "deployment" / "models" / "regression_final_model.joblib"
 HOLDOUT_PATH = ROOT / "data" / "app" / "regression_holdout.csv.gz"
-TABLES = ROOT / "report" / "tables"
+TABLES = ROOT / "docs" / "report" / "tables"
 
 FEATURES = json.loads((TABLES / "regression_selected_features.json").read_text())["tree"]
 NUMERIC, CATEGORICAL = FEATURES["numeric"], FEATURES["categorical"]

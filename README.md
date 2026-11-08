@@ -34,15 +34,16 @@ criteria. See [`docs/model_card.md`](docs/model_card.md) for limitations.
 │   ├── app/               Frozen held-out orders used by the deployed predictor
 │   └── olist_dashboard.csv.gz   Dataset for the EDA Explorer page
 ├── notebooks/             EDA, problem scoping, preprocessing, features, modelling
-├── src/                   Reusable config, data, feature and evaluation code
-├── deployment/            Streamlit app (app.py) and its pages
-├── docs/                  Project overview, model card, feedback, AI use, report drafts
-├── models/                Final fitted model loaded by the app
-├── report/
-│   ├── tables/            Result tables written by the notebooks (some read by the app)
-│   └── figures/           Exported figures
-├── scripts/               prepare_data.py, export_holdout.py
-├── tests/                 Deployment smoke tests
+├── src/                   Reusable code and data-preparation scripts
+│   └── scripts/           prepare_data.py, export_holdout.py
+├── deployment/            Streamlit app and deployment artifacts
+│   ├── pages/             EDA Explorer and Delivery Time Predictor
+│   ├── models/            Final fitted model loaded by the app
+│   └── tests/             Deployment smoke tests
+├── docs/                  Project documentation and report outputs
+│   └── report/
+│       ├── tables/        Result tables written by the notebooks
+│       └── figures/       Exported figures
 ├── requirements.txt       Minimal dependencies for the Streamlit app
 ├── requirements-modelling.txt  Full dependencies for re-running the notebooks
 ├── environment.yml        Conda alternative to requirements-modelling.txt
@@ -51,8 +52,8 @@ criteria. See [`docs/model_card.md`](docs/model_card.md) for limitations.
 
 ## Environment
 
-**Reference version: Python 3.12.** The deployed app, the dev container and
-`.python-version` all use 3.12, and the full notebook pipeline was re-run end to
+**Reference version: Python 3.12.** The deployed app and `.python-version` use
+3.12, and the full notebook pipeline was re-run end to
 end on Python 3.12 with `requirements-modelling.txt` before submission.
 
 Team members executed the notebooks on their own machines, so the saved
@@ -100,7 +101,7 @@ the table inventory and data policy.
 Rebuild the EDA dashboard dataset:
 
 ```bash
-python scripts/prepare_data.py
+python src/scripts/prepare_data.py
 ```
 
 Install the modelling dependencies (or `conda env create -f environment.yml`):
@@ -155,7 +156,7 @@ Python 3.12 and `requirements-modelling.txt`:
 
 The committed tables, model and notebook outputs are the team's original runs
 (Problem B: Python 3.12.7, scikit-learn 1.6.1, numpy 1.26.4, pandas 2.2.2,
-xgboost 3.2.0, as recorded in `report/tables/regression_best_params.json`).
+xgboost 3.2.0, as recorded in `docs/report/tables/regression_best_params.json`).
 
 ## Deployed application
 
@@ -175,7 +176,7 @@ To rebuild the frozen deployment holdout after reproducing the regression
 pipeline:
 
 ```bash
-python scripts/export_holdout.py
+python src/scripts/export_holdout.py
 ```
 
 ## Validation

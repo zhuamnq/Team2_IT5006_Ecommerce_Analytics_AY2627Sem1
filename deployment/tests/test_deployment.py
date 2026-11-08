@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 class DeploymentSmokeTest(unittest.TestCase):
@@ -12,9 +12,9 @@ class DeploymentSmokeTest(unittest.TestCase):
             ROOT / "deployment" / "app.py",
             ROOT / "deployment" / "pages" / "EDA_Explorer.py",
             ROOT / "deployment" / "pages" / "Delivery_Time_Predictor.py",
-            ROOT / "models" / "regression_final_model.joblib",
+            ROOT / "deployment" / "models" / "regression_final_model.joblib",
             ROOT / "data" / "app" / "regression_holdout.csv.gz",
-            ROOT / "report" / "tables" / "regression_selected_features.json",
+            ROOT / "docs" / "report" / "tables" / "regression_selected_features.json",
         ]
         self.assertEqual([], [str(path.relative_to(ROOT)) for path in required if not path.is_file()])
 
@@ -27,7 +27,7 @@ class DeploymentSmokeTest(unittest.TestCase):
             self.skipTest(f"Install requirements.txt to run the model smoke test: {error}")
 
         features = json.loads(
-            (ROOT / "report" / "tables" / "regression_selected_features.json").read_text()
+            (ROOT / "docs" / "report" / "tables" / "regression_selected_features.json").read_text()
         )["tree"]
         columns = features["numeric"] + features["categorical"]
         frame = pd.read_csv(ROOT / "data" / "app" / "regression_holdout.csv.gz", nrows=3)
@@ -35,7 +35,9 @@ class DeploymentSmokeTest(unittest.TestCase):
             frame[column] = frame[column].astype(object)
 
         try:
-            model = joblib.load(ROOT / "models" / "regression_final_model.joblib")
+            model = joblib.load(
+                ROOT / "deployment" / "models" / "regression_final_model.joblib"
+            )
         except Exception as error:
             if "libomp" in str(error):
                 self.skipTest("Install libomp to run the XGBoost model smoke test on macOS")

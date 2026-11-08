@@ -8,9 +8,9 @@ __pycache__/
 data/processed/
 
 # Fitted models are rebuilt by the notebooks
-models/*.joblib
+deployment/models/*.joblib
 # ...except the final model, which the deployed app loads.
-!models/regression_final_model.joblib
+!deployment/models/regression_final_model.joblib
 
 # Keep the generated deployment holdout while ignoring any other app data.
 data/app/*

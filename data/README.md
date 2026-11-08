@@ -12,8 +12,8 @@ read-only inputs so every team member works from the same copy.
 | --- | --- | --- |
 | `raw/` | Yes, never edited | Original Olist download |
 | `processed/` | No (git-ignored) | Preprocessing and feature-engineering notebooks, see below |
-| `app/regression_holdout.csv.gz` | Yes | `scripts/export_holdout.py`, after notebook 05 |
-| `olist_dashboard.csv.gz` | Yes | `scripts/prepare_data.py` |
+| `app/regression_holdout.csv.gz` | Yes | `src/scripts/export_holdout.py`, after notebook 05 |
+| `olist_dashboard.csv.gz` | Yes | `src/scripts/prepare_data.py` |
 
 The two committed generated files are small, frozen copies that the deployed
 Streamlit app reads, so the app runs without re-executing the notebooks.
@@ -29,7 +29,7 @@ floating-point precision).
 
 | File | Written by | Read by | Contents |
 | --- | --- | --- | --- |
-| `delivery_time_regression.csv.gz` | `02_preprocessing` | `03_feature_engineering`, `05_regression_delivery_time`, `scripts/export_holdout.py` | One row per delivered order with the regression target `delivery_days` and purchase-time inputs |
+| `delivery_time_regression.csv.gz` | `02_preprocessing` | `03_feature_engineering`, `05_regression_delivery_time`, `src/scripts/export_holdout.py` | One row per delivered order with the regression target `delivery_days` and purchase-time inputs |
 | `late_delivery_classification.csv.gz` | `02_preprocessing` | `src/features.py` (`load_outcomes`) | Same orders with the binary `is_late` outcome; used for leakage-safe seller and route late-rate history |
 | `order_seller_bridge.csv.gz` | `02_preprocessing` | `src/features.py` | One row per order + seller with seller location, for seller-level history features |
 | `promise_band_base.csv` | `02_preprocessing_problemA` | `03_feature_engineering_problemA` | Problem A cohort with the three-class promise-band target and split labels |
@@ -40,14 +40,14 @@ floating-point precision).
 | `selected_features.csv` | `03_feature_engineering_problemA` | `04_classification_promise_band_modeling` | Problem A selected feature list |
 | `feature_*.csv` | `03_feature_engineering_problemA` | Reference only | Feature-selection diagnostics (mutual information, permutation importance, correlated pairs, validation metrics, training profile) |
 
-Problem B (regression) writes its results to `report/tables/regression_*` and
-`models/regression_final_model.joblib` instead of `processed/`.
+Problem B (regression) writes its results to `docs/report/tables/regression_*`
+and `deployment/models/regression_final_model.joblib` instead of `processed/`.
 
 ## Rebuild commands
 
 ```bash
-python scripts/prepare_data.py       # data/olist_dashboard.csv.gz
-python scripts/export_holdout.py     # data/app/regression_holdout.csv.gz (after notebook 05)
+python src/scripts/prepare_data.py       # data/olist_dashboard.csv.gz
+python src/scripts/export_holdout.py     # data/app/regression_holdout.csv.gz (after notebook 05)
 ```
 
 ## Raw tables
