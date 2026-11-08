@@ -347,7 +347,7 @@ def show_batch_tools():
     template = holdout.head(20)[["order_id", *MODEL_COLUMNS]]
     st.download_button(
         "Download template CSV",
-        lambda: template.to_csv(index=False).encode("utf-8"),
+        template.to_csv(index=False).encode("utf-8"),
         "delivery_template.csv",
         "text/csv",
         on_click="ignore",

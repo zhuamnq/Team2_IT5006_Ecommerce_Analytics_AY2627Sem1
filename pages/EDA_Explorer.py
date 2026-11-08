@@ -208,7 +208,7 @@ if st.toggle("Show filtered data", key="show_filtered_data"):
     st.dataframe(filtered.head(1000), hide_index=True, width="stretch")
     st.download_button(
         "Download filtered data",
-        lambda: filtered.to_csv(index=False).encode("utf-8"),
+        filtered.to_csv(index=False).encode("utf-8"),
         "olist_filtered.csv",
         "text/csv",
         on_click="ignore",
